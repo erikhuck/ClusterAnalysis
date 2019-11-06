@@ -1,3 +1,4 @@
 .idea
-adcenv
 *__pycache__*
+adcenv_local
+adcenv_remote

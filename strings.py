@@ -1,2 +1,5 @@
 MAIN_NAME = '__main__'
 TEST_DIR = 'test'
+DATA_PATH_ARG = '--data-path'
+DATA_PATH_ARG_HELP = 'The path of the data to clean'
+DATA_PATH = '/fslhome/erikpetr/compute/curated_data'
