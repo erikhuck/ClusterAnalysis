@@ -1,8 +1,6 @@
 language: python
 python:
-  - "3.6"
   - "3.7"
-  - "3.8"
 
 # Command to install dependencies
 install:
@@ -10,4 +8,4 @@ install:
 
 # Command to run tests
 script:
-  - test.py
+  - bash .run_test.sh
