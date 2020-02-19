@@ -1,4 +1,3 @@
 .idea
 *__pycache__*
-adcenv_local
-adcenv_remote
+raw_data/raw-data-set.csv
