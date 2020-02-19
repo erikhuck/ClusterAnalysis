@@ -1,3 +1,4 @@
 .idea
 *__pycache__*
 raw_data/raw-data-set.csv
+env/
