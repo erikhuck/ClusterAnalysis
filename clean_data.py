@@ -1,15 +1,11 @@
 """Prepares the data for a machine learning algorithm"""
 
-from pandas import concat
-from pandas import DataFrame
-from pandas import get_dummies
-from pandas import factorize
-from pandas import read_csv
-from pandas import Series
-from numpy import ndarray
-from numpy import concatenate
-# noinspection PyProtectedMember
-from sklearn.impute._iterative import IterativeImputer
+from pandas import concat, DataFrame, get_dummies, factorize, read_csv, Series
+from numpy import concatenate, ndarray, nanmin, nanmax
+# noinspection PyUnresolvedReferences
+from sklearn.experimental import enable_iterative_imputer
+# noinspection PyUnresolvedReferences,PyProtectedMember
+from sklearn.impute import IterativeImputer
 
 
 def get_cols_by_type(data_set: DataFrame, data_types: DataFrame, col_type: str) -> tuple:
@@ -32,13 +28,18 @@ def normalize(df: DataFrame) -> DataFrame:
 def clean_data(data_path: str, data_types_path: str):
     """Main function of this module"""
 
+    # Constants
+    max_iter: int = 2
+    n_nearest_features: int = 200
+    target_col: str = 'CDCOMMUN'
+    impute_seed: int = 0
+
     # Load in the raw data set and the table that indicates the data type of each column
     data_set: DataFrame = read_csv(data_path, low_memory=False)
     data_types: DataFrame = read_csv(data_types_path)
 
     # Remove rows with unknown targets
-    target_col: str = 'CDCOMMUN'
-    data_set: DataFrame = data_set[data_set[target_col].notna()]
+    data_set: DataFrame = data_set[data_set[target_col].notna()].reset_index()
 
     # Separate the targets
     targets: Series = data_set[target_col]
@@ -72,16 +73,16 @@ def clean_data(data_path: str, data_types_path: str):
     # Combine the nominal columns with the numeric so the nominal columns can be used in the imputation
     data_to_impute: ndarray = concatenate((numeric_data, nominal_data.to_numpy()), axis=1)
 
-    del numeric_data
-
     # Impute missing numeric values
-    imputer: IterativeImputer = IterativeImputer(verbose=2, random_state=0, add_indicator=False, max_iter=2)
+    imputer: IterativeImputer = IterativeImputer(
+        verbose=2, random_state=impute_seed, max_iter=max_iter, max_value=nanmax(data_to_impute),
+        min_value=nanmin(data_to_impute), n_nearest_features=n_nearest_features
+    )
     imputed_data: ndarray = imputer.fit_transform(data_to_impute)
 
     # Separate the numeric columns from the nominal columns used to impute
     numeric_data: ndarray = imputed_data[:, :n_numeric_cols]
 
-    del imputed_data
     numeric_data: DataFrame = DataFrame(data=numeric_data, columns=numeric_cols)
 
     # Recombine the nominal data with the numeric data and the targets
