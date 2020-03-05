@@ -1,16 +1,10 @@
 """Main module of this repository: Parses the arguments and calls the chosen handler"""
 
-from argparse import ArgumentParser
-from argparse import Namespace
+from argparse import ArgumentParser, Namespace
 import sys
 
 from handler.arff import arff_handler
 from handler.csv import csv_handler
-from strings import MAIN_NAME
-from strings import DATA_PATH_ARG
-from strings import DATA_PATH_ARG_HELP
-from strings import DATA_TYPES_PATH_ARG
-from strings import DATA_TYPES_PATH_ARG_HELP
 
 
 def parse_args(argv) -> Namespace:
@@ -25,12 +19,12 @@ def parse_args(argv) -> Namespace:
     # Configure the arff handler
     arff_parser: ArgumentParser = subparsers.add_parser('arff')
     arff_parser.add_argument(
-        DATA_PATH_ARG, type=str, required=True,
-        help=DATA_PATH_ARG_HELP
+        '--data-path', type=str, required=True,
+        help='The path of the data to clean'
     )
     arff_parser.add_argument(
-        DATA_TYPES_PATH_ARG, type=str, required=True,
-        help=DATA_TYPES_PATH_ARG_HELP
+        '--data-types-path', type=str, required=True,
+        help='The path to the table that maps the column names to the data types of those columns'
     )
 
     # Configure the csv handler
@@ -61,6 +55,6 @@ def main(argv: list):
         csv_handler(arff_path=args.arff_path, kept_feats=args.kept_feats)
 
 
-if __name__ == MAIN_NAME:
+if __name__ == '__main__':
     # Pass in the program arguments minus the name of the program
     main(sys.argv[1:])
