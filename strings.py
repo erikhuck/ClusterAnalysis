@@ -1,3 +1,5 @@
+"""Module containing strings used throughout the repository"""
+
 DATA_PATH: str = '/raw_data/raw-data-set.csv'
 DATA_PATH_ARG: str = '--data-path'
 DATA_PATH_ARG_HELP: str = 'The path of the data to clean'

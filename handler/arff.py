@@ -1,4 +1,4 @@
-"""Prepares the data for a machine learning algorithm"""
+"""Processes the data and converts it to an ARFF file"""
 
 from pandas import concat, DataFrame, get_dummies, factorize, read_csv, Series
 from numpy import concatenate, ndarray, nanmin, nanmax
@@ -6,15 +6,6 @@ from numpy import concatenate, ndarray, nanmin, nanmax
 from sklearn.experimental import enable_iterative_imputer
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from sklearn.impute import IterativeImputer, SimpleImputer
-
-
-class CleanDataObject:
-    """Object containing the data necessary to save a processed data set to disk"""
-
-    def __init__(self, data: DataFrame, col_types: DataFrame, target_col: str):
-        self.data: DataFrame = data
-        self.col_types: DataFrame = col_types
-        self.target_col: str = target_col
 
 
 def get_cols_by_type(data_set: DataFrame, data_types: DataFrame, col_type: str) -> tuple:
@@ -35,7 +26,7 @@ def normalize(df: DataFrame) -> DataFrame:
 
 
 def clean_nominal_data(data_set: DataFrame, data_types: DataFrame):
-    """Process the nominal data"""
+    """Processes the nominal data"""
 
     nominal_data, nominal_cols = get_cols_by_type(data_set=data_set, data_types=data_types, col_type='nominal')
 
@@ -58,7 +49,7 @@ def clean_nominal_data(data_set: DataFrame, data_types: DataFrame):
 
 def clean_numeric_data(
     data_set: DataFrame, data_types: DataFrame, nominal_data: DataFrame, nominal_cols: list, targets: DataFrame,
-    impute_seed=0, max_iter=1, n_nearest_features=2
+    impute_seed=0, max_iter=20, n_nearest_features=225
 ) -> DataFrame:
     """Processes the numeric data"""
 
@@ -93,7 +84,60 @@ def clean_numeric_data(
     return numeric_data
 
 
-def clean_data(data_path: str, data_types_path: str) -> CleanDataObject:
+def save_data(arff_data: DataFrame, col_types: DataFrame, target_col: str):
+    """Stores the data on disk as an ARFF and a CSV"""
+
+    arff_name: str = 'data.arff'
+
+    # Save the data of the ARFF as a CSV so the header can be added to it
+    arff_data.to_csv(arff_name, index=False)
+
+    # Open the ARFF as a text file to edit
+    with open(arff_name, 'r') as f:
+        arff: str = f.read()
+
+    # Remove the first line
+    arff: list = arff.split('\n')
+    arff: list = arff[1:]
+
+    # Remove empty strings
+    while '' in arff:
+        arff.remove('')
+
+    # Make the header
+    header: list = ['@RELATION ADNI']
+
+    col_names: list = list(arff_data)
+    for col_name in col_names:
+        line: str = '@ATTRIBUTE {}'.format(col_name)
+
+        if col_name == target_col:
+            is_numeric: bool = False
+        else:
+            is_numeric: bool = col_types.loc[0, col_name] == 'numeric'
+
+        if is_numeric:
+            line += ' ' + 'NUMERIC'
+        else:
+            col: Series = arff_data[col_name]
+            categories: set = set(col.unique())
+            line += ' ' + str(categories).replace(' ', '')
+
+        header.append(line)
+
+    header.append('@DATA')
+
+    # Attach the header to the ARFF
+    header.extend(arff)
+    arff: list = header
+
+    # Rewrite the ARFF with the header included
+    with open(arff_name, 'w') as f:
+        for line in arff:
+            f.write(line + '\n')
+
+
+def arff_handler(data_path: str, data_types_path: str):
     """Main function of this module"""
 
     target_col: str = 'CDCOMMUN'
@@ -127,7 +171,8 @@ def clean_data(data_path: str, data_types_path: str) -> CleanDataObject:
         data_set=data_set, data_types=data_types, nominal_data=nominal_data, nominal_cols=nominal_cols, targets=targets
     )
 
-    # Combine the processed nominal data with the processed numeric data and the targets
-    data: DataFrame = concat([numeric_data, nominal_data, targets], axis=1)
+    # Combine the processed nominal data with the processed numeric data and the targets for the ARFF
+    arff_data: DataFrame = concat([numeric_data, nominal_data, targets], axis=1)
 
-    return CleanDataObject(data=data, col_types=data_types, target_col=target_col)
+    # Convert the data to ARFF format and save it as an ARFF file
+    save_data(arff_data=arff_data, col_types=data_types, target_col=target_col)
