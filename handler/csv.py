@@ -11,6 +11,7 @@ def get_col_to_type(arff: list) -> dict:
     cols: list = arff[1:data_idx]
     col_to_type: dict = {}
     for item in cols:
+        # noinspection PyUnresolvedReferences
         item: list = item.split(' ')
         assert '' not in item
         col_name: str = item[1]
