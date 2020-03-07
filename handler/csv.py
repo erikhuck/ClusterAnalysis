@@ -74,6 +74,9 @@ def get_data_set(data: DataFrame, col_to_type: dict, kept_feats: list) -> DataFr
     # Combine the numeric, nominal, and target columns into one complete data set
     data: DataFrame = concat([numeric_data, nominal_data, targets], axis=1)
 
+    # Shuffle the data set
+    data: DataFrame = data.sample(frac=1, axis=0, random_state=0)
+
     return data
 
 
