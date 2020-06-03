@@ -8,4 +8,4 @@ else
 fi
 
 source env/bin/activate
-$COMMAND main.py csv --arff-path data.arff --kept-feats feat-select/kept-feats-0.2.txt
+$COMMAND main.py csv --arff-path data.arff --kept-feats feat-select/best.txt

@@ -1,8 +1,9 @@
 .idea
 *__pycache__*
-raw_data/raw-data-set.csv
+raw-data/raw-data-set.csv
 env/
 arff.err
 arff.out
 data.arff
 data.csv
+old/

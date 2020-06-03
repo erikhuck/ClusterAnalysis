@@ -47,7 +47,7 @@ def get_data_set(data: DataFrame, col_to_type: dict, kept_feats: list) -> DataFr
     """Creates the final data set from the selected features and one-hot encoded nominal columns"""
 
     # Splice out the targets
-    target_col: str = 'CDCOMMUN'
+    target_col: str = 'CDGLOBAL'
     targets: DataFrame = data[[target_col]].copy()
     
     # Splice out only the selected features

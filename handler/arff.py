@@ -49,7 +49,7 @@ def clean_nominal_data(data_set: DataFrame, data_types: DataFrame):
 
 def clean_numeric_data(
     data_set: DataFrame, data_types: DataFrame, nominal_data: DataFrame, nominal_cols: list, targets: DataFrame,
-    impute_seed=0, max_iter=20, n_nearest_features=225
+    impute_seed=0, max_iter=10, n_nearest_features=100
 ) -> DataFrame:
     """Processes the numeric data"""
 
@@ -140,7 +140,7 @@ def save_data(arff_data: DataFrame, col_types: DataFrame, target_col: str):
 def arff_handler(data_path: str, data_types_path: str):
     """Main function of this module"""
 
-    target_col: str = 'CDCOMMUN'
+    target_col: str = 'CDGLOBAL'
 
     # Load in the raw data set and the table that indicates the data type of each column
     data_set: DataFrame = read_csv(data_path, low_memory=False)
@@ -148,6 +148,11 @@ def arff_handler(data_path: str, data_types_path: str):
 
     # Remove rows with unknown targets
     data_set: DataFrame = data_set[data_set[target_col].notna()].reset_index()
+
+    # Remove columns that are entirely NA after the above action was performed
+    data_set: DataFrame = data_set.dropna(axis=1, how='all')
+    del data_set['index']
+    data_types: DataFrame = data_types[list(data_set)]
 
     # Separate the targets
     targets: Series = data_set.loc[:, target_col].copy()
