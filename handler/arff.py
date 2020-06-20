@@ -1,11 +1,75 @@
 """Processes the data and converts it to an ARFF file"""
 
 from pandas import concat, DataFrame, get_dummies, factorize, read_csv, Series
-from numpy import concatenate, ndarray, nanmin, nanmax
+from os.path import join
+from numpy import concatenate, ndarray, nanmin, nanmax, isnan
 # noinspection PyUnresolvedReferences
 from sklearn.experimental import enable_iterative_imputer
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from sklearn.impute import IterativeImputer, SimpleImputer
+
+
+def arff_handler(cohort: str, target_col: str):
+    """Main function of this module"""
+
+    raw_data_dir: str = 'raw-data'
+    raw_data_dir: str = join(raw_data_dir, cohort)
+    phenotype_data: DataFrame = process_phenotype_data(raw_data_dir=raw_data_dir, target_col=target_col)
+
+    # Convert the data to ARFF format and save it as an ARFF file
+    save_data(arff_data=arff_data, col_types=data_types, target_col=target_col)
+
+
+def process_phenotype_data(raw_data_dir: str, target_col: str) -> DataFrame:
+    """Cleans up the phenotype data according to its specific needs"""
+
+    # Load in the raw data set and the table that indicates the data type of each column
+    data_path: str = join(raw_data_dir, 'phenotypes.csv')
+    data_set: DataFrame = read_csv(data_path, low_memory=False)
+    col_types_path: str = join(raw_data_dir, 'phenotype-col-types.csv')
+    col_types: DataFrame = read_csv(col_types_path, low_memory=False)
+
+    # Remove rows with unknown targets
+    if target_col is not None:
+        data_set: DataFrame = data_set[data_set[target_col].notna()].reset_index()
+        del data_set['index']
+
+    # Remove columns that are entirely NA
+    data_set: DataFrame = data_set.dropna(axis=1, how='all')
+
+    col_types: DataFrame = col_types[list(data_set)]
+    targets = None
+
+    if target_col is not None:
+        # Separate the targets
+        targets: Series = data_set.loc[:, target_col].copy()
+        del data_set[target_col]
+        del col_types[target_col]
+
+        # Combine the highest target category with the second highest category
+        max_cat: float = targets.max()
+        targets[targets == max_cat] = max_cat - 1
+
+        # Ordinal encode the targets
+        targets, _ = factorize(targets)
+
+        targets: DataFrame = DataFrame(targets, columns=[target_col])
+
+    # Process the nominal columns
+    nominal_data, nominal_cols = clean_nominal_data(data_set=data_set, data_types=col_types)
+
+    # Process the numeric columns
+    numeric_data: DataFrame = clean_numeric_data(
+        data_set=data_set, data_types=col_types, nominal_data=nominal_data, nominal_cols=nominal_cols, targets=targets
+    )
+
+    # Combine the processed nominal data with the processed numeric data and the targets if applicable
+    if targets is not None:
+        data_set: DataFrame = concat([numeric_data, nominal_data, targets], axis=1)
+    else:
+        data_set: DataFrame = concat([numeric_data, nominal_data], axis=1)
+
+    return data_set
 
 
 def get_cols_by_type(data_set: DataFrame, data_types: DataFrame, col_type: str) -> tuple:
@@ -49,13 +113,17 @@ def clean_nominal_data(data_set: DataFrame, data_types: DataFrame):
 
 def clean_numeric_data(
     data_set: DataFrame, data_types: DataFrame, nominal_data: DataFrame, nominal_cols: list, targets: DataFrame,
-    impute_seed=0, max_iter=10, n_nearest_features=100
+    impute_seed=0, max_iter=2, n_nearest_features=2
 ) -> DataFrame:
     """Processes the numeric data"""
 
     # One hot encode the nominal values for the purpose of imputing unknown real values with a more sophisticated method
     one_hot_nominal_data: DataFrame = get_dummies(nominal_data, columns=nominal_cols, dummy_na=False)
-    one_hot_targets: DataFrame = get_dummies(targets, columns=list(targets), dummy_na=False)
+
+    if targets is not None:
+        one_hot_targets: DataFrame = get_dummies(targets, columns=list(targets), dummy_na=False)
+    else:
+        one_hot_targets = None
 
     # Get the numeric columns and column names
     numeric_data, numeric_cols = get_cols_by_type(data_set=data_set, data_types=data_types, col_type='numeric')
@@ -66,9 +134,14 @@ def clean_numeric_data(
     n_numeric_cols: int = numeric_data.shape[1]
 
     # Combine the nominal columns with the numeric so the nominal columns can be used in the imputation
-    data_to_impute: ndarray = concatenate(
-        [numeric_data.to_numpy(), one_hot_nominal_data.to_numpy(), one_hot_targets.to_numpy()], axis=1
-    )
+    if one_hot_targets is not None:
+        data_to_impute: ndarray = concatenate(
+            [numeric_data.to_numpy(), one_hot_nominal_data.to_numpy(), one_hot_targets.to_numpy()], axis=1
+        )
+    else:
+        data_to_impute: ndarray = concatenate(
+            [numeric_data.to_numpy(), one_hot_nominal_data.to_numpy()], axis=1
+        )
 
     # Impute missing numeric values
     imputer: IterativeImputer = IterativeImputer(
@@ -76,6 +149,7 @@ def clean_numeric_data(
         min_value=nanmin(data_to_impute), n_nearest_features=n_nearest_features
     )
     imputed_data: ndarray = imputer.fit_transform(data_to_impute)
+    assert not isnan(imputed_data.mean())
 
     # Separate the imputed numeric columns from the nominal columns that helped impute
     numeric_data: ndarray = imputed_data[:, :n_numeric_cols]
@@ -135,49 +209,3 @@ def save_data(arff_data: DataFrame, col_types: DataFrame, target_col: str):
     with open(arff_name, 'w') as f:
         for line in arff:
             f.write(line + '\n')
-
-
-def arff_handler(data_path: str, data_types_path: str):
-    """Main function of this module"""
-
-    target_col: str = 'CDGLOBAL'
-
-    # Load in the raw data set and the table that indicates the data type of each column
-    data_set: DataFrame = read_csv(data_path, low_memory=False)
-    data_types: DataFrame = read_csv(data_types_path)
-
-    # Remove rows with unknown targets
-    data_set: DataFrame = data_set[data_set[target_col].notna()].reset_index()
-
-    # Remove columns that are entirely NA after the above action was performed
-    data_set: DataFrame = data_set.dropna(axis=1, how='all')
-    del data_set['index']
-    data_types: DataFrame = data_types[list(data_set)]
-
-    # Separate the targets
-    targets: Series = data_set.loc[:, target_col].copy()
-    del data_set[target_col]
-    del data_types[target_col]
-
-    # Combine the highest target category with the second highest category
-    max_cat: float = targets.max()
-    targets[targets == max_cat] = max_cat - 1
-
-    # Ordinal encode the targets
-    targets, _ = factorize(targets)
-
-    targets: DataFrame = DataFrame(targets, columns=[target_col])
-
-    # Process the nominal columns
-    nominal_data, nominal_cols = clean_nominal_data(data_set=data_set, data_types=data_types)
-
-    # Process the numeric columns
-    numeric_data: DataFrame = clean_numeric_data(
-        data_set=data_set, data_types=data_types, nominal_data=nominal_data, nominal_cols=nominal_cols, targets=targets
-    )
-
-    # Combine the processed nominal data with the processed numeric data and the targets for the ARFF
-    arff_data: DataFrame = concat([numeric_data, nominal_data, targets], axis=1)
-
-    # Convert the data to ARFF format and save it as an ARFF file
-    save_data(arff_data=arff_data, col_types=data_types, target_col=target_col)

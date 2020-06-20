@@ -19,12 +19,12 @@ def parse_args(argv) -> Namespace:
     # Configure the arff handler
     arff_parser: ArgumentParser = subparsers.add_parser('arff')
     arff_parser.add_argument(
-        '--data-path', type=str, required=True,
-        help='The path of the data to clean'
+        '--cohort', type=str, required=True,
+        help='Whether the cohort is ADNI or ANM; choices: adni, anm'
     )
     arff_parser.add_argument(
-        '--data-types-path', type=str, required=True,
-        help='The path to the table that maps the column names to the data types of those columns'
+        '--target-col', type=str, required=False,
+        help='If specified, process the data as if it is supervised using this column as the targets'
     )
 
     # Configure the csv handler
@@ -49,7 +49,7 @@ def main(argv: list):
 
     if args.handler_type == 'arff':
         # Make the ARFF to be used with WEKA
-        arff_handler(data_path=args.data_path, data_types_path=args.data_types_path)
+        arff_handler(cohort=args.cohort, target_col=args.target_col)
     elif args.handler_type == 'csv':
         # Make the CSV to be used for deep learning
         csv_handler(arff_path=args.arff_path, kept_feats=args.kept_feats)
