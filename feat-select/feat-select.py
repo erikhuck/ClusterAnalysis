@@ -21,7 +21,7 @@ for item in rank_output:
 threshold: str = argv[1]
 print('Keeping {} features using a threshold of {}'.format(len(feats_to_keep), threshold))
 
-output_file_name: str = 'kept_feats_{}.txt'.format(threshold)
+output_file_name: str = 'feat-select/kept-feats-{}.txt'.format(threshold)
 with open(output_file_name, 'w') as f:
     for feat in feats_to_keep:
         f.write(feat + '\n')
