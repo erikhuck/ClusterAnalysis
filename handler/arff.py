@@ -233,7 +233,7 @@ def save_data(arff_data: DataFrame, col_types: DataFrame, target_col: str, cohor
         arff.remove('')
 
     # Make the header
-    header: list = ['@RELATION ADNI']
+    header: list = ['@RELATION {}'.format(cohort.upper())]
 
     col_names: list = list(arff_data)
     for col_name in col_names:
