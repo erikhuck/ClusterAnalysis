@@ -44,13 +44,10 @@ def parse_args(argv) -> Namespace:
 
     # Configure the cluster handler
     cluster_parser: ArgumentParser = subparsers.add_parser('cluster')
+    configure_parser(parser=cluster_parser)
     cluster_parser.add_argument(
         '--n-clusters', type=int, required=False,
         help='The number of clusters to use'
-    )
-    cluster_parser.add_argument(
-        '--data-path', type=str, required=False,
-        help='Path to the data set to cluster'
     )
 
     args: Namespace = parser.parse_args(argv)
@@ -69,7 +66,10 @@ def main(argv: list):
         # Make the CSV to be used for deep learning
         csv_handler(cohort=args.cohort, target_col=args.target_col, kept_feats=args.kept_feats)
     elif args.handler_type == 'cluster':
-        cluster_handler(n_clusters=args.n_clusters, data_path=args.data_path)
+        # Clustering uses no targets
+        assert args.target_col is None
+
+        cluster_handler(n_clusters=args.n_clusters, cohort=args.cohort)
 
 
 if __name__ == '__main__':
