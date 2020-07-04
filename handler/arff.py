@@ -8,7 +8,8 @@ from sklearn.experimental import enable_iterative_imputer
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from sklearn.impute import IterativeImputer, SimpleImputer
 
-PTID_COL: str = 'PTID'
+from handler.utils import ARFF_PATH, PTID_COL, PTID_CSV, get_del_col
+
 NUMERIC_COL_TYPE: str = 'numeric'
 NOMINAL_COL_TYPE: str = 'nominal'
 
@@ -36,7 +37,11 @@ def arff_handler(cohort: str, target_col: str):
 
     # Merge the data sets by PTID and then remove the PTID column, which is only used to merge
     combined_data: DataFrame = merge(expression_data, phenotype_data, on=PTID_COL, how='inner')
+    ptid_col: DataFrame = combined_data[[PTID_COL]].copy()
     del combined_data[PTID_COL]
+
+    # Save the patient ID column for later
+    ptid_col.to_csv(PTID_CSV.format(cohort), index=False)
 
     assert combined_data.shape[-1] == n_expression_cols + n_phenotype_cols
     col_types: DataFrame = concat([expression_col_types, phenotype_col_types], axis=1)
@@ -49,12 +54,12 @@ def process_numeric_data(raw_data_dir: str, csv: str):
     """Processes a data set that is complete, needs no targets, and entirely numeric"""
 
     data: DataFrame = read_csv(join(raw_data_dir, csv), low_memory=False)
-    ptid_col: Series = get_del_col(data_set=data, col_types=None, col_name=PTID_COL)
+    ptid_col: DataFrame = get_del_col(data_set=data, col_types=None, col_name=PTID_COL)
     data: DataFrame = normalize(df=data)
     n_cols: int = data.shape[-1]
     col_types: list = [NUMERIC_COL_TYPE] * n_cols
     col_types: DataFrame = DataFrame(data=[col_types], columns=list(data))
-    data.insert(loc=0, column=PTID_COL, value=ptid_col)
+    data: DataFrame = concat([ptid_col, data], axis=1)
     return data, col_types, n_cols
 
 
@@ -76,14 +81,14 @@ def process_phenotype_data(raw_data_dir: str, target_col: str) -> tuple:
     data_set: DataFrame = data_set.dropna(axis=1, how='all')
 
     # Extract the patient ID column as it cannot be used in the processing
-    ptid_col: Series = get_del_col(data_set=data_set, col_types=col_types, col_name=PTID_COL)
+    ptid_col: DataFrame = get_del_col(data_set=data_set, col_types=col_types, col_name=PTID_COL)
 
     col_types: DataFrame = col_types[list(data_set)]
     targets = None
 
     if target_col is not None:
         # Separate the targets
-        targets: Series = get_del_col(data_set=data_set, col_types=col_types, col_name=target_col)
+        targets: Series = get_del_col(data_set=data_set, col_types=col_types, col_name=target_col)[target_col]
 
         # Combine the highest target category with the second highest category
         max_cat: float = targets.max()
@@ -109,21 +114,9 @@ def process_phenotype_data(raw_data_dir: str, target_col: str) -> tuple:
         data_set: DataFrame = concat([numeric_data, nominal_data], axis=1)
 
     # Finally add the patient ID column back on so the phenotype data can be joined with other data
-    data_set.insert(loc=0, column=PTID_COL, value=ptid_col)
+    data_set: DataFrame = concat([ptid_col, data_set], axis=1)
 
     return data_set, col_types
-
-
-def get_del_col(data_set: DataFrame, col_types: DataFrame, col_name: str) -> Series:
-    """Obtains and deletes a column from the data set"""
-
-    col: Series = data_set.loc[:, col_name].copy()
-    del data_set[col_name]
-
-    if col_types is not None and col_name in col_types:
-        del col_types[col_name]
-
-    return col
 
 
 def get_cols_by_type(data_set: DataFrame, data_types: DataFrame, col_type: str) -> tuple:
@@ -215,7 +208,7 @@ def clean_numeric_data(
 def save_data(arff_data: DataFrame, col_types: DataFrame, target_col: str, cohort: str):
     """Stores the data on disk as an ARFF and a CSV"""
 
-    arff_name: str = 'clean-data/{}.arff'.format(cohort)
+    arff_name: str = ARFF_PATH.format(cohort)
 
     # Save the data of the ARFF as a CSV so the header can be added to it
     arff_data.to_csv(arff_name, index=False)

@@ -1,8 +1,9 @@
 """Takes the features selected by WEKA to create a CSV data set for deep learning"""
 
 from numpy import array, ndarray
-from pandas import concat, DataFrame, get_dummies
-from os.path import join
+from pandas import concat, DataFrame, get_dummies, read_csv
+
+from handler.utils import PTID_CSV, ARFF_PATH, CSV_PATH
 
 
 def get_col_to_type(arff: list) -> dict:
@@ -48,7 +49,7 @@ def get_data(arff: list, col_names: list) -> DataFrame:
     return data
 
 
-def get_data_set(data: DataFrame, col_to_type: dict, target_col: str, kept_feats: str) -> DataFrame:
+def get_data_set(data: DataFrame, col_to_type: dict, target_col: str, kept_feats: str, cohort: str) -> DataFrame:
     """Creates the final data set from the selected features and one-hot encoded nominal columns"""
 
     targets = None
@@ -97,6 +98,10 @@ def get_data_set(data: DataFrame, col_to_type: dict, target_col: str, kept_feats
     else:
         data: DataFrame = concat([numeric_data, nominal_data], axis=1)
 
+    # Concatenate the patient ID column
+    ptid_col: DataFrame = read_csv(PTID_CSV.format(cohort))
+    data: DataFrame = concat([ptid_col, data], axis=1)
+
     # Shuffle the data set
     data: DataFrame = data.sample(frac=1, axis=0, random_state=0)
 
@@ -106,10 +111,8 @@ def get_data_set(data: DataFrame, col_to_type: dict, target_col: str, kept_feats
 def csv_handler(cohort: str, target_col: str, kept_feats: str):
     """Main function of this module"""
 
-    clean_data_dir: str = 'clean-data'
-
     # Open the ARFF file to get the data, columns, and column types
-    arff_path: str = join(clean_data_dir, cohort + '.arff')
+    arff_path: str = ARFF_PATH.format(cohort)
 
     with open(arff_path, 'r') as f:
         arff: str = f.read()
@@ -125,8 +128,10 @@ def csv_handler(cohort: str, target_col: str, kept_feats: str):
     data: DataFrame = get_data(arff=arff, col_names=list(col_to_type.keys()))
     
     # Construct the final data set using only the selected features
-    data: DataFrame = get_data_set(data=data, col_to_type=col_to_type, target_col=target_col, kept_feats=kept_feats)
+    data: DataFrame = get_data_set(
+        data=data, col_to_type=col_to_type, target_col=target_col, kept_feats=kept_feats, cohort=cohort
+    )
 
     # Save the CSV
-    csv_path: str = join(clean_data_dir, cohort + '.csv')
+    csv_path: str = CSV_PATH.format(cohort)
     data.to_csv(csv_path, index=False)
