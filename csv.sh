@@ -7,5 +7,5 @@ else
     COMMAND=pudb3
 fi
 
-source env/bin/activate
-$COMMAND main.py csv --arff-path data.arff --kept-feats feat-select/best.txt
+source ../env/bin/activate
+$COMMAND main.py csv --cohort adni

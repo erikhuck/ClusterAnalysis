@@ -5,10 +5,11 @@ import sys
 
 from handler.arff import arff_handler
 from handler.csv import csv_handler
+from handler.cluster import cluster_handler
 
 
 def configure_parser(parser: ArgumentParser):
-    """Does the configuration for both types of parsers"""
+    """Does the configuration for both types of parsers (ARFF and CSV)"""
 
     parser.add_argument(
         '--cohort', type=str, required=True,
@@ -41,6 +42,17 @@ def parse_args(argv) -> Namespace:
         help='Path to the text file containing the selected features'
     )
 
+    # Configure the cluster handler
+    cluster_parser: ArgumentParser = subparsers.add_parser('cluster')
+    cluster_parser.add_argument(
+        '--n-clusters', type=int, required=False,
+        help='The number of clusters to use'
+    )
+    cluster_parser.add_argument(
+        '--data-path', type=str, required=False,
+        help='Path to the data set to cluster'
+    )
+
     args: Namespace = parser.parse_args(argv)
     return args
 
@@ -56,6 +68,8 @@ def main(argv: list):
     elif args.handler_type == 'csv':
         # Make the CSV to be used for deep learning
         csv_handler(cohort=args.cohort, target_col=args.target_col, kept_feats=args.kept_feats)
+    elif args.handler_type == 'cluster':
+        cluster_handler(n_clusters=args.n_clusters, data_path=args.data_path)
 
 
 if __name__ == '__main__':
