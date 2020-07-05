@@ -1,14 +1,14 @@
 """Processes the data and converts it to an ARFF file"""
 
 from pandas import concat, DataFrame, get_dummies, factorize, read_csv, Series, merge
-from os.path import join
+from os.path import join, isfile
 from numpy import concatenate, ndarray, nanmin, nanmax, isnan
 # noinspection PyUnresolvedReferences
 from sklearn.experimental import enable_iterative_imputer
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from sklearn.impute import IterativeImputer, SimpleImputer
 
-from handler.utils import ARFF_PATH, PTID_COL, PTID_CSV, get_del_col
+from handler.utils import ARFF_PATH, PTID_COL, PTID_CSV, get_del_col, CLUSTERING_PATH, CLUSTER_ID_COL
 
 NUMERIC_COL_TYPE: str = 'numeric'
 NOMINAL_COL_TYPE: str = 'nominal'
@@ -35,15 +35,27 @@ def arff_handler(cohort: str, target_col: str):
     phenotype_data, phenotype_col_types = process_phenotype_data(raw_data_dir=raw_data_dir, target_col=target_col)
     n_phenotype_cols: int = phenotype_data.shape[-1] - 1
 
-    # Merge the data sets by PTID and then remove the PTID column, which is only used to merge
+    # Merge the data sets by PTID
     combined_data: DataFrame = merge(expression_data, phenotype_data, on=PTID_COL, how='inner')
-    ptid_col: DataFrame = combined_data[[PTID_COL]].copy()
+    # TODO: combined_data: DataFrame = merge(combined_data, mri_data, on=PTID_COL, how='inner')
+
+    clustering_path: str = CLUSTERING_PATH.format(cohort)
+
+    if isfile(clustering_path):
+        # If the clustering labels are available, attach them
+        clustering: DataFrame = read_csv(clustering_path)
+        combined_data: DataFrame = merge(combined_data, clustering, on=PTID_COL, how='inner')
+        assert combined_data.shape[-1] == n_expression_cols + n_phenotype_cols + 2
+        target_col: str = CLUSTER_ID_COL
+    else:
+        # Save the patient ID column for getting the clustering labels
+        ptid_col: DataFrame = combined_data[[PTID_COL]].copy()
+        ptid_col.to_csv(PTID_CSV.format(cohort), index=False)
+        assert combined_data.shape[-1] == n_expression_cols + n_phenotype_cols + 1
+
+    # Remove the PTID column, which is only used to merge
     del combined_data[PTID_COL]
 
-    # Save the patient ID column for later
-    ptid_col.to_csv(PTID_CSV.format(cohort), index=False)
-
-    assert combined_data.shape[-1] == n_expression_cols + n_phenotype_cols
     col_types: DataFrame = concat([expression_col_types, phenotype_col_types], axis=1)
 
     # Convert the data to ARFF format and save it as an ARFF file

@@ -7,6 +7,7 @@ ARFF_PATH: str = 'clean-data/{}/data.arff'
 CSV_PATH: str = 'clean-data/{}/data.csv'
 PTID_CSV: str = 'clean-data/{}/ptids.csv'
 CLUSTERING_PATH: str = 'clean-data/{}/clustering.csv'
+CLUSTER_ID_COL: str = 'CLUSTER_ID'
 
 
 def get_del_col(data_set: DataFrame, col_types: DataFrame, col_name: str) -> DataFrame:

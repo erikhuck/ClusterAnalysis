@@ -5,7 +5,7 @@ from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score
 from numpy import ndarray
 
-from handler.utils import CSV_PATH, PTID_COL, get_del_col, CLUSTERING_PATH
+from handler.utils import CSV_PATH, PTID_COL, get_del_col, CLUSTERING_PATH, CLUSTER_ID_COL
 
 
 def cluster_handler(n_clusters: int, cohort: str):
@@ -22,6 +22,6 @@ def cluster_handler(n_clusters: int, cohort: str):
     print('Clustering Score:', clustering_score)
 
     # Save the clustering
-    labels: DataFrame = DataFrame(labels, columns=['CLUSTER_ID'])
+    labels: DataFrame = DataFrame(labels, columns=[CLUSTER_ID_COL])
     clustering: DataFrame = concat([ptid_col, labels], axis=1)
     clustering.to_csv(CLUSTERING_PATH.format(cohort), index=False)
