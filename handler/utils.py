@@ -5,7 +5,6 @@ from pandas import DataFrame
 PTID_COL: str = 'PTID'
 ARFF_PATH: str = 'clean-data/{}/data.arff'
 CSV_PATH: str = 'clean-data/{}/data.csv'
-PTID_CSV: str = 'clean-data/{}/ptids.csv'
 CLUSTERING_PATH: str = 'clean-data/{}/clustering.csv'
 CLUSTER_ID_COL: str = 'CLUSTER_ID'
 

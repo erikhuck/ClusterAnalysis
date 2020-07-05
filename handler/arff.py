@@ -8,7 +8,7 @@ from sklearn.experimental import enable_iterative_imputer
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from sklearn.impute import IterativeImputer, SimpleImputer
 
-from handler.utils import ARFF_PATH, PTID_COL, PTID_CSV, get_del_col, CLUSTERING_PATH, CLUSTER_ID_COL
+from handler.utils import ARFF_PATH, PTID_COL,  get_del_col, CLUSTERING_PATH, CLUSTER_ID_COL
 
 NUMERIC_COL_TYPE: str = 'numeric'
 NOMINAL_COL_TYPE: str = 'nominal'
@@ -47,14 +47,6 @@ def arff_handler(cohort: str, target_col: str):
         combined_data: DataFrame = merge(combined_data, clustering, on=PTID_COL, how='inner')
         assert combined_data.shape[-1] == n_expression_cols + n_phenotype_cols + 2
         target_col: str = CLUSTER_ID_COL
-    else:
-        # Save the patient ID column for getting the clustering labels
-        ptid_col: DataFrame = combined_data[[PTID_COL]].copy()
-        ptid_col.to_csv(PTID_CSV.format(cohort), index=False)
-        assert combined_data.shape[-1] == n_expression_cols + n_phenotype_cols + 1
-
-    # Remove the PTID column, which is only used to merge
-    del combined_data[PTID_COL]
 
     col_types: DataFrame = concat([expression_col_types, phenotype_col_types], axis=1)
 
@@ -244,17 +236,20 @@ def save_data(arff_data: DataFrame, col_types: DataFrame, target_col: str, cohor
     for col_name in col_names:
         line: str = '@ATTRIBUTE {}'.format(col_name)
 
-        if col_name == target_col:
-            is_numeric: bool = False
+        if col_name == PTID_COL:
+            line += ' ' + 'STRING'
         else:
-            is_numeric: bool = col_types.loc[0, col_name] == NUMERIC_COL_TYPE
+            if col_name == target_col:
+                is_numeric: bool = False
+            else:
+                is_numeric: bool = col_types.loc[0, col_name] == NUMERIC_COL_TYPE
 
-        if is_numeric:
-            line += ' ' + 'NUMERIC'
-        else:
-            col: Series = arff_data[col_name]
-            categories: set = set(col.unique())
-            line += ' ' + str(categories).replace(' ', '')
+            if is_numeric:
+                line += ' ' + 'NUMERIC'
+            else:
+                col: Series = arff_data[col_name]
+                categories: set = set(col.unique())
+                line += ' ' + str(categories).replace(' ', '')
 
         header.append(line)
 

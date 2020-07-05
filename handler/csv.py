@@ -1,9 +1,9 @@
 """Takes the features selected by WEKA to create a CSV data set for deep learning"""
 
 from numpy import array, ndarray
-from pandas import concat, DataFrame, get_dummies, read_csv
+from pandas import concat, DataFrame, get_dummies
 
-from handler.utils import PTID_CSV, ARFF_PATH, CSV_PATH
+from handler.utils import ARFF_PATH, CSV_PATH, PTID_COL, get_del_col
 
 
 def get_col_to_type(arff: list) -> dict:
@@ -39,7 +39,11 @@ def get_data(arff: list, col_names: list) -> DataFrame:
         assert len(instance) == len(col_names)
 
         for j, val in enumerate(instance):
-            instance[j] = float(val)
+            try:
+                instance[j] = float(val)
+            except ValueError:
+                # The value was a patient ID
+                continue
 
         data[i] = instance
 
@@ -57,6 +61,9 @@ def get_data_set(data: DataFrame, col_to_type: dict, target_col: str, kept_feats
     if target_col is not None:
         # Splice out the targets
         targets: DataFrame = data[[target_col]].copy()
+
+    # Temporarily take out the patient id column
+    ptid_col: DataFrame = get_del_col(data_set=data, col_types=None, col_name=PTID_COL)
 
     if kept_feats is not None:
         # Load in the columns that were selected by a feature selection algorithm
@@ -86,8 +93,9 @@ def get_data_set(data: DataFrame, col_to_type: dict, target_col: str, kept_feats
     # Splice out the nominal columns
     nominal_data: DataFrame = data[nominal_cols].copy()
 
-    # One-hot encode the nominal data
-    nominal_data: DataFrame = get_dummies(nominal_data, columns=nominal_cols, dummy_na=False)
+    if nominal_data.shape[-1] > 0:
+        # One-hot encode the nominal data
+        nominal_data: DataFrame = get_dummies(nominal_data, columns=nominal_cols, dummy_na=False)
     
     # Splice out the numeric columns
     numeric_data: DataFrame = data[numeric_cols].copy()
@@ -98,12 +106,8 @@ def get_data_set(data: DataFrame, col_to_type: dict, target_col: str, kept_feats
     else:
         data: DataFrame = concat([numeric_data, nominal_data], axis=1)
 
-    # Concatenate the patient ID column
-    ptid_col: DataFrame = read_csv(PTID_CSV.format(cohort))
+    # Merge the PTID column back in
     data: DataFrame = concat([ptid_col, data], axis=1)
-
-    # Shuffle the data set
-    data: DataFrame = data.sample(frac=1, axis=0, random_state=0)
 
     return data
 

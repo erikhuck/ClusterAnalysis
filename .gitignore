@@ -4,3 +4,4 @@ raw-data/
 *.err
 *.out
 clean-data/
+feat-select/kept-feats*
