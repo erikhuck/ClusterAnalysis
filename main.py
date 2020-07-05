@@ -8,13 +8,18 @@ from handler.csv import csv_handler
 from handler.cluster import cluster_handler
 
 
-def configure_parser(parser: ArgumentParser):
-    """Does the configuration for both types of parsers (ARFF and CSV)"""
+def add_cohort_arg(parser: ArgumentParser):
+    """Adds the cohort argument to a parser"""
 
     parser.add_argument(
         '--cohort', type=str, required=True,
         help='Whether the cohort is ADNI or ANM; choices: adni, anm'
     )
+
+
+def add_target_col_arg(parser: ArgumentParser):
+    """Adds the target column argument to a parser"""
+
     parser.add_argument(
         '--target-col', type=str, required=False,
         help='If specified, process the data as if it is supervised using this column as the targets'
@@ -32,11 +37,13 @@ def parse_args(argv) -> Namespace:
 
     # Configure the arff handler
     arff_parser: ArgumentParser = subparsers.add_parser('arff')
-    configure_parser(parser=arff_parser)
+    add_cohort_arg(parser=arff_parser)
+    add_target_col_arg(parser=arff_parser)
 
     # Configure the csv handler
     csv_parser: ArgumentParser = subparsers.add_parser('csv')
-    configure_parser(parser=csv_parser)
+    add_cohort_arg(parser=csv_parser)
+    add_target_col_arg(parser=csv_parser)
     csv_parser.add_argument(
         '--kept-feats', type=str, required=False,
         help='Path to the text file containing the selected features'
@@ -44,7 +51,7 @@ def parse_args(argv) -> Namespace:
 
     # Configure the cluster handler
     cluster_parser: ArgumentParser = subparsers.add_parser('cluster')
-    configure_parser(parser=cluster_parser)
+    add_cohort_arg(parser=cluster_parser)
     cluster_parser.add_argument(
         '--n-clusters', type=int, required=False,
         help='The number of clusters to use'
@@ -66,9 +73,6 @@ def main(argv: list):
         # Make the CSV to be used for deep learning
         csv_handler(cohort=args.cohort, target_col=args.target_col, kept_feats=args.kept_feats)
     elif args.handler_type == 'cluster':
-        # Clustering uses no targets
-        assert args.target_col is None
-
         cluster_handler(n_clusters=args.n_clusters, cohort=args.cohort)
 
 
