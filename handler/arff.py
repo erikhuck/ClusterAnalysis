@@ -45,9 +45,13 @@ def arff_handler(cohort: str, target_col: str):
         # If the clustering labels are available, attach them
         clustering: DataFrame = read_csv(clustering_path)
         combined_data: DataFrame = merge(combined_data, clustering, on=PTID_COL, how='inner')
-        assert combined_data.shape[-1] == n_expression_cols + n_phenotype_cols + 2
         target_col: str = CLUSTER_ID_COL
 
+        # Since the clustering labels are for selecting features, we do not want the patient ids
+        # So we'll either have clustering labels and no ptids or ptids and no clustering labels
+        del combined_data[PTID_COL]
+
+    assert combined_data.shape[-1] == n_expression_cols + n_phenotype_cols + 1  # Plus one for the labels of ptids
     col_types: DataFrame = concat([expression_col_types, phenotype_col_types], axis=1)
 
     # Convert the data to ARFF format and save it as an ARFF file
