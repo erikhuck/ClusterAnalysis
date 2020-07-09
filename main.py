@@ -3,6 +3,8 @@
 from argparse import ArgumentParser, Namespace
 import sys
 
+from handler.phenotypes import phenotypes_handler
+from handler.combine import combine_handler
 from handler.arff import arff_handler
 from handler.csv import csv_handler
 from handler.cluster import cluster_handler
@@ -31,19 +33,24 @@ def parse_args(argv) -> Namespace:
 
     parser: ArgumentParser = ArgumentParser()
 
-    # Create a parser for the arff handler and the csv handler
     subparsers = parser.add_subparsers(dest='handler_type', title='handler_type')
     subparsers.required = True
+
+    # Configure the phenotypes handler
+    phenotypes_parser: ArgumentParser = subparsers.add_parser('phenotypes')
+    add_cohort_arg(parser=phenotypes_parser)
+
+    # Configure the combine handler
+    combine_parser: ArgumentParser = subparsers.add_parser('combine')
+    add_cohort_arg(parser=combine_parser)
 
     # Configure the arff handler
     arff_parser: ArgumentParser = subparsers.add_parser('arff')
     add_cohort_arg(parser=arff_parser)
-    add_target_col_arg(parser=arff_parser)
 
     # Configure the csv handler
     csv_parser: ArgumentParser = subparsers.add_parser('csv')
     add_cohort_arg(parser=csv_parser)
-    add_target_col_arg(parser=csv_parser)
     csv_parser.add_argument(
         '--kept-feats', type=str, required=False,
         help='Path to the text file containing the selected features'
@@ -66,12 +73,16 @@ def main(argv: list):
 
     args: Namespace = parse_args(argv)
 
-    if args.handler_type == 'arff':
+    if args.handler_type == 'phenotypes':
+        phenotypes_handler(cohort=args.cohort)
+    elif args.handler_type == 'combine':
+        combine_handler(cohort=args.cohort)
+    elif args.handler_type == 'arff':
         # Make the ARFF to be used with WEKA
-        arff_handler(cohort=args.cohort, target_col=args.target_col)
+        arff_handler(cohort=args.cohort)
     elif args.handler_type == 'csv':
         # Make the CSV to be used for deep learning
-        csv_handler(cohort=args.cohort, target_col=args.target_col, kept_feats=args.kept_feats)
+        csv_handler(cohort=args.cohort, kept_feats=args.kept_feats)
     elif args.handler_type == 'cluster':
         cluster_handler(n_clusters=args.n_clusters, cohort=args.cohort)
 
