@@ -2,8 +2,8 @@
 
 from pandas import DataFrame, merge, concat, read_csv
 from handler.utils import (
-    PTID_COL, get_del_col, normalize, NUMERIC_COL_TYPE, PHENOTYPES_PATH, PHENOTYPES_COL_TYPES_PATH, BASE_CSV_PATH,
-    COL_TYPES_PATH
+    PTID_COL, get_del_col, normalize, PHENOTYPES_PATH, PHENOTYPES_COL_TYPES_PATH, BASE_CSV_PATH,
+    COL_TYPES_PATH, get_numeric_col_types
 )
 
 
@@ -49,10 +49,10 @@ def process_numeric_data(top_dir: str, cohort: str, csv: str, do_normalize: bool
     if do_normalize:
         data: DataFrame = normalize(df=data)
 
-    n_cols: int = data.shape[-1]
-    col_types: list = [NUMERIC_COL_TYPE] * n_cols
-    col_types: DataFrame = DataFrame(data=[col_types], columns=list(data))
+    columns: list = list(data)
+    col_types: DataFrame = get_numeric_col_types(columns=columns)
     data: DataFrame = concat([ptid_col, data], axis=1)
+    n_cols: int = len(columns)
     return data, col_types, n_cols
 
 

@@ -2,13 +2,13 @@
 
 SCRIPT_NAME="pipeline"
 COHORT="adni"
-DATASET="combined"
+DATASET="mri"
 N_CLUSTERS="2"
 N_ITERATIONS="3"
 JOB_NAME=${SCRIPT_NAME}-${COHORT}-${DATASET}
 
 sbatch -J $JOB_NAME \
-    --time=00-00:30:00 \
+    --time=00-20:00:00 \
     --nodes=1 \
     --ntasks=1 \
     --mem=32G \

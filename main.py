@@ -5,6 +5,7 @@ import sys
 
 from handler.phenotypes import phenotypes_handler
 from handler.combine import combine_handler
+from handler.mri_col_types import mri_col_types_handler
 from handler.csv import csv_handler
 from handler.cluster import cluster_handler
 from handler.arff import arff_handler
@@ -83,6 +84,10 @@ def parse_args(argv) -> Namespace:
     combine_parser: ArgumentParser = subparsers.add_parser('combine')
     add_cohort_arg(parser=combine_parser)
 
+    # Configure the mri-col-types handler
+    mri_col_types_parser: ArgumentParser = subparsers.add_parser('mri-col-types')
+    add_cohort_arg(parser=mri_col_types_parser)
+
     # Configure the csv handler
     csv_parser: ArgumentParser = subparsers.add_parser('csv')
     add_file_path_args(parser=csv_parser)
@@ -132,6 +137,9 @@ def main(argv: list):
     elif args.handler_type == 'combine':
         # Combine the phenotypes, MRI data, and gene expression data into a single data set
         combine_handler(cohort=args.cohort)
+    elif args.handler_type == 'mri-col-types':
+        # Create and save the column types for the MRI data set so it can be clustered and feature reduced
+        mri_col_types_handler(cohort=args.cohort)
     elif args.handler_type == 'csv':
         # Make the CSV to be used for clustering
         csv_handler(

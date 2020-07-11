@@ -65,3 +65,12 @@ def get_kept_feats(kept_feats_path: str, data: DataFrame, col_types: DataFrame, 
 
     data: DataFrame = data[kept_feats].copy()
     return data, col_types
+
+
+def get_numeric_col_types(columns: list) -> DataFrame:
+    """Gets the column types for a numeric data set"""
+
+    n_cols: int = len(columns)
+    col_types: list = [NUMERIC_COL_TYPE] * n_cols
+    col_types: DataFrame = DataFrame(data=[col_types], columns=columns)
+    return col_types
