@@ -1,18 +1,15 @@
 """Selects features from an ARFF using a WEKA feature selection algorithm"""
 
-from sys import argv
 from os import popen
 
 from handler.utils import KEPT_FEATS_PATH, ARFF_PATH
 
 
-def feat_select_handler(
-    cohort: str, iteration: int, dataset: str, n_kept_feats: int, n_clusters: int, clustering_score: str
-):
+def feat_select_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n_clusters: int):
     """Main method of this module"""
 
     # Run the feature selection WEKA algorithm on the ARFF
-    arff_path: str = ARFF_PATH.format(cohort, iteration, dataset, n_kept_feats, n_clusters, clustering_score)
+    arff_path: str = ARFF_PATH.format(cohort, dataset, iteration, n_kept_feats, n_clusters)
     n_kept_feats: int = int(n_kept_feats * 0.9)
     command: str = 'java -cp ~/weka-3-8-4/weka.jar weka.attributeSelection.InfoGainAttributeEval -s '
     command += '"weka.attributeSelection.Ranker -T 0.0 -N {}" -i {}'.format(n_kept_feats, arff_path)
@@ -38,9 +35,7 @@ def feat_select_handler(
 
     assert n_kept_feats == len(feats_to_keep)
     print(n_kept_feats)
-    kept_feats_path: str = KEPT_FEATS_PATH.format(
-        cohort, iteration, dataset, n_kept_feats, n_clusters, clustering_score
-    )
+    kept_feats_path: str = KEPT_FEATS_PATH.format(cohort, dataset, iteration, n_kept_feats, n_clusters)
 
     # Save the kept features
     with open(kept_feats_path, 'w') as f:

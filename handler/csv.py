@@ -8,7 +8,7 @@ from handler.utils import (
 )
 
 
-def csv_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n_clusters: int, clustering_score: str):
+def csv_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n_clusters: int):
     """Main function of this module"""
 
     # Load the initial data
@@ -22,18 +22,17 @@ def csv_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n_
         # All the features were kept because this is the first iteration
         assert n_kept_feats is None
         n_kept_feats: int = len(list(col_types))
-        print(n_kept_feats)
         kept_feats_path = None
     else:
         # There were features selected in the previous iteration
-        kept_feats_path: str = KEPT_FEATS_PATH.format(
-            cohort, iteration - 1, dataset, n_kept_feats, n_clusters, clustering_score
-        )
+        kept_feats_path: str = KEPT_FEATS_PATH.format(cohort, dataset, iteration - 1, n_kept_feats, n_clusters)
+
+    print(n_kept_feats)
 
     # Construct the final data set using only the selected features
     data: DataFrame = get_data_set(data=data, col_types=col_types, kept_feats_path=kept_feats_path)
 
-    csv_path: str = CSV_PATH.format(cohort, iteration, dataset, n_kept_feats, n_clusters, clustering_score)
+    csv_path: str = CSV_PATH.format(cohort, dataset, iteration, n_kept_feats, n_clusters)
     data.to_csv(csv_path, index=False)
 
 

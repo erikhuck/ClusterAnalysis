@@ -3,10 +3,10 @@
 from pandas import DataFrame, Series
 
 PTID_COL: str = 'PTID'
-CSV_PATH: str = 'clean-data/{}/iter{}/{}-data-{}-{}-{}.csv'
-CLUSTERING_PATH: str = 'clean-data/{}/iter{}/{}-clustering-{}-{}-{}.csv'
-ARFF_PATH: str = 'clean-data/{}/iter{}/{}-data-{}-{}-{}.arff'
-KEPT_FEATS_PATH: str = 'clean-data/{}/iter{}/{}-kept_feats-{}-{}-{}.txt'
+CSV_PATH: str = 'clean-data/{}/{}/iter{}/data-{}-{}.csv'
+CLUSTERING_PATH: str = 'clean-data/{}/{}/iter{}/clustering-{}-{}-{}.csv'
+ARFF_PATH: str = 'clean-data/{}/{}/iter{}/data-{}-{}.arff'
+KEPT_FEATS_PATH: str = 'clean-data/{}/{}/iter{}/kept_feats-{}-{}.txt'
 PTID_TO_CDR_PATH: str = 'intermediate-data/{}/ptid-to-cdr.p'
 PHENOTYPES_PATH: str = 'intermediate-data/{}/phenotypes.csv'
 BASE_CSV_PATH: str = 'intermediate-data/{}/{}.csv'

@@ -9,6 +9,7 @@ from handler.csv import csv_handler
 from handler.cluster import cluster_handler
 from handler.arff import arff_handler
 from handler.feat_select import feat_select_handler
+from handler.pipeline import pipeline_handler
 
 
 def add_cohort_arg(parser: ArgumentParser):
@@ -56,15 +57,6 @@ def add_n_clusters_arg(parser: ArgumentParser):
     )
 
 
-def add_clustering_score_arg(parser: ArgumentParser):
-    """Adds the clustering score argument to the parser"""
-
-    parser.add_argument(
-        '--clustering-score', type=str, required=False,
-        help='The clustering score of the previous clustering'
-    )
-
-
 def add_file_path_args(parser: ArgumentParser):
     """Adds the arguments that are used for constructing file paths to data"""
 
@@ -73,7 +65,6 @@ def add_file_path_args(parser: ArgumentParser):
     add_dataset_arg(parser=parser)
     add_n_kept_feats_arg(parser=parser)
     add_n_clusters_arg(parser=parser)
-    add_clustering_score_arg(parser=parser)
 
 
 def parse_args(argv) -> Namespace:
@@ -103,10 +94,24 @@ def parse_args(argv) -> Namespace:
     # Configure the arff handler
     arff_parser: ArgumentParser = subparsers.add_parser('arff')
     add_file_path_args(parser=arff_parser)
+    arff_parser.add_argument(
+        '--clustering-score', type=str, required=True,
+        help='The clustering score of the previous clustering'
+    )
 
     # Configure the feat-select handler
     feat_select_parser: ArgumentParser = subparsers.add_parser('feat-select')
     add_file_path_args(parser=feat_select_parser)
+
+    # Configure the pipeline handler
+    pipeline_parser: ArgumentParser = subparsers.add_parser('pipeline')
+    add_cohort_arg(parser=pipeline_parser)
+    add_dataset_arg(parser=pipeline_parser)
+    add_n_clusters_arg(parser=pipeline_parser)
+    pipeline_parser.add_argument(
+        '--n-iterations', type=int, required=True,
+        help='The number of iterations to reduce the features and re-cluster'
+    )
 
     args: Namespace = parser.parse_args(argv)
 
@@ -131,13 +136,13 @@ def main(argv: list):
         # Make the CSV to be used for clustering
         csv_handler(
             cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
-            n_clusters=args.n_clusters, clustering_score=args.clustering_score
+            n_clusters=args.n_clusters
         )
     elif args.handler_type == 'cluster':
         # Obtain the cluster labels for the ARFF
         cluster_handler(
             cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
-            n_clusters=args.n_clusters, clustering_score=args.clustering_score
+            n_clusters=args.n_clusters
         )
     elif args.handler_type == 'arff':
         # Make the ARFF to be used with WEKA
@@ -149,7 +154,11 @@ def main(argv: list):
         # Select the features from the ARFF using WEKA
         feat_select_handler(
             cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
-            n_clusters=args.n_clusters, clustering_score=args.clustering_score
+            n_clusters=args.n_clusters
+        )
+    elif args.handler_type == 'pipeline':
+        pipeline_handler(
+            cohort=args.cohort, dataset=args.dataset, n_clusters=args.n_clusters, n_iterations=args.n_iterations
         )
 
 

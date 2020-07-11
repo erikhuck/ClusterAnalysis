@@ -13,7 +13,7 @@ def arff_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n
 
     # Combine the data with the clustering labels
     clustering_path: str = CLUSTERING_PATH.format(
-        cohort, iteration, dataset, n_kept_feats, n_clusters, clustering_score
+        cohort, dataset, iteration, n_kept_feats, n_clusters, clustering_score
     )
     clustering: DataFrame = read_csv(clustering_path)
     data_path: str = BASE_CSV_PATH.format(cohort, dataset)
@@ -27,9 +27,7 @@ def arff_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n
         # Since the clustering labels are for selecting features, we do not want the patient ids
         del data[PTID_COL]
     else:
-        kept_feats_path: str = KEPT_FEATS_PATH.format(
-            cohort, iteration - 1, dataset, n_kept_feats, n_clusters, clustering_score
-        )
+        kept_feats_path: str = KEPT_FEATS_PATH.format(cohort, dataset, iteration - 1, n_kept_feats, n_clusters)
 
         # The patient IDs will be removed too since it is impossible for PTID to be a selected feature
         data, col_types = get_kept_feats(
@@ -37,7 +35,7 @@ def arff_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n
         )
 
     # Convert the data to ARFF format and save it as an ARFF file
-    arff_path: str = ARFF_PATH.format(cohort, iteration, dataset, n_kept_feats, n_clusters, clustering_score)
+    arff_path: str = ARFF_PATH.format(cohort, dataset, iteration, n_kept_feats, n_clusters)
     save_data(arff_path=arff_path, arff_data=data, col_types=col_types, target_col=CLUSTER_ID_COL, cohort=cohort)
 
 
