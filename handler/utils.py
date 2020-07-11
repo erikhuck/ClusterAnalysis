@@ -3,13 +3,14 @@
 from pandas import DataFrame, Series
 
 PTID_COL: str = 'PTID'
-ARFF_PATH: str = 'clean-data/{}/data.arff'
-CSV_PATH: str = 'clean-data/{}/data.csv'
-CLUSTERING_PATH: str = 'clean-data/{}/clustering.csv'
+CSV_PATH: str = 'clean-data/{}/iter{}/{}-data-{}-{}-{}.csv'
+CLUSTERING_PATH: str = 'clean-data/{}/iter{}/{}-clustering-{}-{}-{}.csv'
+ARFF_PATH: str = 'clean-data/{}/iter{}/{}-data-{}-{}-{}.arff'
+KEPT_FEATS_PATH: str = 'clean-data/{}/iter{}/{}-kept_feats-{}-{}-{}.txt'
 PTID_TO_CDR_PATH: str = 'intermediate-data/{}/ptid-to-cdr.p'
 PHENOTYPES_PATH: str = 'intermediate-data/{}/phenotypes.csv'
-COMBINED_PATH: str = 'intermediate-data/{}/combined.csv'
-COMBINED_COL_TYPES_PATH: str = 'intermediate-data/{}/combined-col-types.csv'
+BASE_CSV_PATH: str = 'intermediate-data/{}/{}.csv'
+COL_TYPES_PATH: str = 'intermediate-data/{}/{}-col-types.csv'
 PHENOTYPES_COL_TYPES_PATH: str = 'raw-data/{}/phenotype-col-types.csv'
 CLUSTER_ID_COL: str = 'CLUSTER_ID'
 NUMERIC_COL_TYPE: str = 'numeric'
@@ -43,3 +44,24 @@ def get_cols_by_type(data_set: DataFrame, data_types: DataFrame, col_type: str) 
     cols: list = list(cols)
     data: DataFrame = data_set[cols]
     return data, cols
+
+
+def get_kept_feats(kept_feats_path: str, data: DataFrame, col_types: DataFrame, keep_cluster_id: bool = False) -> tuple:
+    """Splices out the features of a data set that are specified"""
+
+    # Load in the columns that were selected by the WEKA feature selection algorithm on the previous iteration
+    with open(kept_feats_path, 'r') as f:
+        kept_feats: str = f.read()
+
+    kept_feats: list = kept_feats.split('\n')
+    kept_feats.remove('')
+    assert '' not in kept_feats
+
+    # Splice out only the selected features
+    col_types: DataFrame = col_types[kept_feats].copy()
+
+    if keep_cluster_id:
+        kept_feats.append(CLUSTER_ID_COL)
+
+    data: DataFrame = data[kept_feats].copy()
+    return data, col_types

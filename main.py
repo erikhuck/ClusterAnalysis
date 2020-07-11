@@ -5,9 +5,10 @@ import sys
 
 from handler.phenotypes import phenotypes_handler
 from handler.combine import combine_handler
-from handler.arff import arff_handler
 from handler.csv import csv_handler
 from handler.cluster import cluster_handler
+from handler.arff import arff_handler
+from handler.feat_select import feat_select_handler
 
 
 def add_cohort_arg(parser: ArgumentParser):
@@ -19,13 +20,60 @@ def add_cohort_arg(parser: ArgumentParser):
     )
 
 
-def add_target_col_arg(parser: ArgumentParser):
+def add_iteration_arg(parser: ArgumentParser):
+    """Adds the iteration argument to a parser"""
+
+    parser.add_argument(
+        '--iteration', type=int, required=True,
+        help='The clustering iteration (i.e. how many clusterings have been made so far)'
+    )
+
+
+def add_dataset_arg(parser: ArgumentParser):
     """Adds the target column argument to a parser"""
 
     parser.add_argument(
-        '--target-col', type=str, required=False,
-        help='If specified, process the data as if it is supervised using this column as the targets'
+        '--dataset', type=str, required=True,
+        help='The data set to clean or cluster'
     )
+
+
+def add_n_kept_feats_arg(parser: ArgumentParser):
+    """Adds the number of kept features argument to the parser"""
+
+    parser.add_argument(
+        '--n-kept-feats', type=int, required=False,
+        help='The number of features that have been kept. Exclude argument to use all the features'
+    )
+
+
+def add_n_clusters_arg(parser: ArgumentParser):
+    """Adds the number of clusters argument to the parser"""
+
+    parser.add_argument(
+        '--n-clusters', type=int, required=True,
+        help='The number of clusters to use'
+    )
+
+
+def add_clustering_score_arg(parser: ArgumentParser):
+    """Adds the clustering score argument to the parser"""
+
+    parser.add_argument(
+        '--clustering-score', type=str, required=False,
+        help='The clustering score of the previous clustering'
+    )
+
+
+def add_file_path_args(parser: ArgumentParser):
+    """Adds the arguments that are used for constructing file paths to data"""
+
+    add_cohort_arg(parser=parser)
+    add_iteration_arg(parser=parser)
+    add_dataset_arg(parser=parser)
+    add_n_kept_feats_arg(parser=parser)
+    add_n_clusters_arg(parser=parser)
+    add_clustering_score_arg(parser=parser)
 
 
 def parse_args(argv) -> Namespace:
@@ -44,27 +92,27 @@ def parse_args(argv) -> Namespace:
     combine_parser: ArgumentParser = subparsers.add_parser('combine')
     add_cohort_arg(parser=combine_parser)
 
-    # Configure the arff handler
-    arff_parser: ArgumentParser = subparsers.add_parser('arff')
-    add_cohort_arg(parser=arff_parser)
-
     # Configure the csv handler
     csv_parser: ArgumentParser = subparsers.add_parser('csv')
-    add_cohort_arg(parser=csv_parser)
-    csv_parser.add_argument(
-        '--kept-feats', type=str, required=False,
-        help='Path to the text file containing the selected features'
-    )
+    add_file_path_args(parser=csv_parser)
 
     # Configure the cluster handler
     cluster_parser: ArgumentParser = subparsers.add_parser('cluster')
-    add_cohort_arg(parser=cluster_parser)
-    cluster_parser.add_argument(
-        '--n-clusters', type=int, required=False,
-        help='The number of clusters to use'
-    )
+    add_file_path_args(parser=cluster_parser)
+
+    # Configure the arff handler
+    arff_parser: ArgumentParser = subparsers.add_parser('arff')
+    add_file_path_args(parser=arff_parser)
+
+    # Configure the feat-select handler
+    feat_select_parser: ArgumentParser = subparsers.add_parser('feat-select')
+    add_file_path_args(parser=feat_select_parser)
 
     args: Namespace = parser.parse_args(argv)
+
+    if hasattr(args, 'clustering_score') and args.clustering_score is None:
+        args.clustering_score = 'no_score'
+
     return args
 
 
@@ -74,17 +122,35 @@ def main(argv: list):
     args: Namespace = parse_args(argv)
 
     if args.handler_type == 'phenotypes':
+        # Process the phenotypic data according to its specific needs
         phenotypes_handler(cohort=args.cohort)
     elif args.handler_type == 'combine':
+        # Combine the phenotypes, MRI data, and gene expression data into a single data set
         combine_handler(cohort=args.cohort)
+    elif args.handler_type == 'csv':
+        # Make the CSV to be used for clustering
+        csv_handler(
+            cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
+            n_clusters=args.n_clusters, clustering_score=args.clustering_score
+        )
+    elif args.handler_type == 'cluster':
+        # Obtain the cluster labels for the ARFF
+        cluster_handler(
+            cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
+            n_clusters=args.n_clusters, clustering_score=args.clustering_score
+        )
     elif args.handler_type == 'arff':
         # Make the ARFF to be used with WEKA
-        arff_handler(cohort=args.cohort)
-    elif args.handler_type == 'csv':
-        # Make the CSV to be used for deep learning
-        csv_handler(cohort=args.cohort, kept_feats=args.kept_feats)
-    elif args.handler_type == 'cluster':
-        cluster_handler(n_clusters=args.n_clusters, cohort=args.cohort)
+        arff_handler(
+            cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
+            n_clusters=args.n_clusters, clustering_score=args.clustering_score
+        )
+    elif args.handler_type == 'feat-select':
+        # Select the features from the ARFF using WEKA
+        feat_select_handler(
+            cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
+            n_clusters=args.n_clusters, clustering_score=args.clustering_score
+        )
 
 
 if __name__ == '__main__':

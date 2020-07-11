@@ -2,19 +2,25 @@
 
 from pandas import DataFrame, merge, concat, read_csv
 from handler.utils import (
-    PTID_COL, get_del_col, normalize, NUMERIC_COL_TYPE, PHENOTYPES_PATH, PHENOTYPES_COL_TYPES_PATH, COMBINED_PATH,
-    COMBINED_COL_TYPES_PATH
+    PTID_COL, get_del_col, normalize, NUMERIC_COL_TYPE, PHENOTYPES_PATH, PHENOTYPES_COL_TYPES_PATH, BASE_CSV_PATH,
+    COL_TYPES_PATH
 )
 
 
 def combine_handler(cohort: str):
     """Main method of this module"""
 
+    dataset: str = 'combined'
+
     # Handle the MRI data
-    # TODO: mri_data, mri_col_types, n_mri_cols = process_numeric_data(cohort=cohort, csv='mri)
+    # TODO: mri_data, mri_col_types, n_mri_cols = process_numeric_data(
+    # top_dir='intermediate-data', cohort=cohort, csv='mri, do_normalize=False
+    # )
 
     # Handle the expression data
-    expression_data, expression_col_types, n_expression_cols = process_numeric_data(cohort=cohort, csv='expression')
+    expression_data, expression_col_types, n_expression_cols = process_numeric_data(
+        top_dir='raw-data', cohort=cohort, csv='expression'
+    )
 
     # Handle the phenotype data
     phenotype_data, phenotype_col_types, n_phenotype_cols = load_phenotype_data(cohort=cohort)
@@ -28,17 +34,21 @@ def combine_handler(cohort: str):
     col_types: DataFrame = concat([expression_col_types, phenotype_col_types], axis=1)
     # TODO: col_types: DataFrame = concat([col_types, mri_col_types], axis=1)
 
-    combined_data.to_csv(COMBINED_PATH.format(cohort), index=False)
-    col_types.to_csv(COMBINED_COL_TYPES_PATH.format(cohort), index=False)
+    # Save the CSV that will serve as the basis for future feature reduction
+    combined_data.to_csv(BASE_CSV_PATH.format(cohort, dataset), index=False)
+    col_types.to_csv(COL_TYPES_PATH.format(cohort, dataset), index=False)
 
 
-def process_numeric_data(cohort: str, csv: str):
+def process_numeric_data(top_dir: str, cohort: str, csv: str, do_normalize: bool = True):
     """Processes a data set that is complete, needs no targets, and entirely numeric"""
 
-    data_path: str = 'raw-data/{}/{}.csv'.format(cohort, csv)
+    data_path: str = '{}/{}/{}.csv'.format(top_dir, cohort, csv)
     data: DataFrame = read_csv(data_path, low_memory=False)
     ptid_col: DataFrame = get_del_col(data_set=data, col_types=None, col_name=PTID_COL)
-    data: DataFrame = normalize(df=data)
+
+    if do_normalize:
+        data: DataFrame = normalize(df=data)
+
     n_cols: int = data.shape[-1]
     col_types: list = [NUMERIC_COL_TYPE] * n_cols
     col_types: DataFrame = DataFrame(data=[col_types], columns=list(data))
