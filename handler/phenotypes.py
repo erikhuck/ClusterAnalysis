@@ -9,8 +9,8 @@ from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer, SimpleImputer
 
 from handler.utils import (
-    get_del_col, PTID_COL, NOMINAL_COL_TYPE, NUMERIC_COL_TYPE, normalize, PTID_TO_CDR_PATH, PHENOTYPES_PATH,
-    PHENOTYPES_COL_TYPES_PATH, get_cols_by_type
+    get_del_col, PTID_COL, NOMINAL_COL_TYPE, NUMERIC_COL_TYPE, normalize, PHENOTYPES_PATH, PHENOTYPES_COL_TYPES_PATH,
+    get_cols_by_type
 )
 
 
@@ -23,7 +23,7 @@ def phenotypes_handler(cohort: str):
     col_types_path: str = PHENOTYPES_COL_TYPES_PATH.format(cohort)
     col_types: DataFrame = read_csv(col_types_path, low_memory=False)
 
-    handle_cdr(data_set=data_set, cohort=cohort)
+    data_set, col_types = get_mappings(data_set=data_set, col_types=col_types, cohort=cohort)
 
     # Extract the patient ID column as it cannot be used in the processing
     ptid_col: DataFrame = get_del_col(data_set=data_set, col_types=col_types, col_name=PTID_COL)
@@ -46,33 +46,46 @@ def phenotypes_handler(cohort: str):
     data_set.to_csv(phenotypes_path, index=False)
 
 
-def handle_cdr(data_set: DataFrame, cohort: str):
-    """Deals with the clinical dementia rating aspect of the data set"""
+def get_mappings(data_set: DataFrame, col_types: DataFrame, cohort: str):
+    """Creates mappings from patient ID to other pertinent features, removing rows that don't have them from the data"""
 
-    # Remove rows with an unknown clinical dementia rating
-    cdr_col: str = 'CDGLOBAL'
-    data_set: DataFrame = data_set[data_set[cdr_col].notna()].reset_index()
-    del data_set['index']
+    # TODO: make this work for ANM too
 
-    # Remove columns that became entirely NA after the above operation
+    cdr_feat: str = 'CDGLOBAL'
+    feats_to_map: list = [cdr_feat, 'PTGENDER', 'AGE', 'COLPROT']
+
+    for feat in feats_to_map:
+        # Remove rows in which the current feature is unknown
+        data_set: DataFrame = data_set[data_set[feat].notna()].reset_index()
+        del data_set['index']
+
+    # Remove columns that became entirely NA after the above operations
     data_set: DataFrame = data_set.dropna(axis=1, how='all')
+    remaining_feats: list = list(data_set)
+    remaining_feats.remove(PTID_COL)
+    col_types: DataFrame = col_types[remaining_feats].copy()
 
-    # Combine the highest CDR category with the second highest category
-    cdr_col: Series = data_set[cdr_col].copy()
-    max_cat: float = cdr_col.max()
-    cdr_col[cdr_col == max_cat] = max_cat - 1
+    # Create a mapping of patient IDs to the current feature
+    ptid_col: Series = data_set[PTID_COL].copy()
+    ptid_to_feat: dict = {}
 
-    # Create a mapping of patient IDs to clinical dementia rating
-    ptid_col: Series = data_set[PTID_COL]
-    ptid_to_cdr: dict = {}
+    for feat in feats_to_map:
+        feat_col: Series = data_set[feat].copy()
 
-    for ptid, cdr in zip(ptid_col, cdr_col):
-        ptid_to_cdr[ptid] = cdr
+        if feat == cdr_feat:
+            # Combine the highest CDR category with the second highest category
+            max_cat: float = feat_col.max()
+            feat_col[feat_col == max_cat] = max_cat - 1
 
-    ptid_to_cdr_path: str = PTID_TO_CDR_PATH.format(cohort)
+        for ptid, val in zip(ptid_col, feat_col):
+            ptid_to_feat[ptid] = val
 
-    with open(ptid_to_cdr_path, 'wb') as f:
-        dump(ptid_to_cdr, f)
+        ptid_to_feat_path: str = 'clean-data/{}/feat-maps/{}.p'.format(cohort, feat.lower())
+
+        with open(ptid_to_feat_path, 'wb') as f:
+            dump(ptid_to_feat, f)
+
+    return data_set, col_types
 
 
 def clean_nominal_data(data_set: DataFrame, data_types: DataFrame):
@@ -99,7 +112,7 @@ def clean_nominal_data(data_set: DataFrame, data_types: DataFrame):
 
 def clean_numeric_data(
         data_set: DataFrame, data_types: DataFrame, nominal_data: DataFrame, nominal_cols: list, impute_seed=0,
-        max_iter=10, n_nearest_features=100
+        max_iter=50, n_nearest_features=150
 ) -> DataFrame:
     """Processes the numeric data"""
 
@@ -130,4 +143,3 @@ def clean_numeric_data(
 
     numeric_data: DataFrame = DataFrame(data=numeric_data, columns=numeric_cols)
     return numeric_data
-
