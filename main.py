@@ -3,10 +3,7 @@
 from argparse import ArgumentParser, Namespace
 import sys
 
-from handler.phenotypes import phenotypes_handler
 from handler.combine import combine_handler
-from handler.mri_col_types import mri_col_types_handler
-from handler.csv import csv_handler
 from handler.cluster import cluster_handler
 from handler.arff import arff_handler
 from handler.feat_select import feat_select_handler
@@ -76,21 +73,9 @@ def parse_args(argv) -> Namespace:
     subparsers = parser.add_subparsers(dest='handler_type', title='handler_type')
     subparsers.required = True
 
-    # Configure the phenotypes handler
-    phenotypes_parser: ArgumentParser = subparsers.add_parser('phenotypes')
-    add_cohort_arg(parser=phenotypes_parser)
-
     # Configure the combine handler
     combine_parser: ArgumentParser = subparsers.add_parser('combine')
     add_cohort_arg(parser=combine_parser)
-
-    # Configure the mri-col-types handler
-    mri_col_types_parser: ArgumentParser = subparsers.add_parser('mri-col-types')
-    add_cohort_arg(parser=mri_col_types_parser)
-
-    # Configure the csv handler
-    csv_parser: ArgumentParser = subparsers.add_parser('csv')
-    add_file_path_args(parser=csv_parser)
 
     # Configure the cluster handler
     cluster_parser: ArgumentParser = subparsers.add_parser('cluster')
@@ -131,21 +116,9 @@ def main(argv: list):
 
     args: Namespace = parse_args(argv)
 
-    if args.handler_type == 'phenotypes':
-        # Process the phenotypic data according to its specific needs
-        phenotypes_handler(cohort=args.cohort)
-    elif args.handler_type == 'combine':
+    if args.handler_type == 'combine':
         # Combine the phenotypes, MRI data, and gene expression data into a single data set
         combine_handler(cohort=args.cohort)
-    elif args.handler_type == 'mri-col-types':
-        # Create and save the column types for the MRI data set so it can be clustered and feature reduced
-        mri_col_types_handler(cohort=args.cohort)
-    elif args.handler_type == 'csv':
-        # Make the CSV to be used for clustering
-        csv_handler(
-            cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
-            n_clusters=args.n_clusters
-        )
     elif args.handler_type == 'cluster':
         # Obtain the cluster labels for the ARFF
         cluster_handler(

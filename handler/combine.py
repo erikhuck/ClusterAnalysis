@@ -1,67 +1,40 @@
 """Combines the data sets into one"""
 
 from pandas import DataFrame, merge, concat, read_csv
-from handler.utils import (
-    PTID_COL, get_del_col, normalize, PHENOTYPES_PATH, PHENOTYPES_COL_TYPES_PATH, BASE_CSV_PATH,
-    COL_TYPES_PATH, get_numeric_col_types
-)
+from handler.utils import PTID_COL, BASE_DATA_PATH, BASE_COL_TYPES_PATH
 
 
 def combine_handler(cohort: str):
     """Main method of this module"""
 
-    dataset: str = 'combined'
+    dataset_name: str = 'combined'
+    phenotypes_data_name: str = 'phenotypes'
+    expression_data_name: str = 'expression'
+    mri_data_name: str = 'mri'
 
-    # Handle the MRI data
-    # TODO: mri_data, mri_col_types, n_mri_cols = process_numeric_data(
-    # top_dir='intermediate-data', cohort=cohort, csv='mri, do_normalize=False
-    # )
-
-    # Handle the expression data
-    expression_data, expression_col_types, n_expression_cols = process_numeric_data(
-        top_dir='raw-data', cohort=cohort, csv='expression'
-    )
-
-    # Handle the phenotype data
-    phenotype_data, phenotype_col_types, n_phenotype_cols = load_phenotype_data(cohort=cohort)
+    # Load the data
+    phenotypes_data, phenotypes_col_types = load_data(data_name=phenotypes_data_name, cohort=cohort)
+    expression_data, expression_col_types = load_data(data_name=expression_data_name, cohort=cohort)
+    # TODO: Load the feature selected MRI data
 
     # Merge the data sets by PTID
-    combined_data: DataFrame = merge(expression_data, phenotype_data, on=PTID_COL, how='inner')
-    assert combined_data.shape[-1] == n_expression_cols + n_phenotype_cols + 1  # Plus one for the ptids TODO: MRIs too
+    combined_data: DataFrame = merge(phenotypes_data, expression_data, on=PTID_COL, how='inner')
     # TODO: combined_data: DataFrame = merge(combined_data, mri_data, on=PTID_COL, how='inner')
 
     # Likewise, combine the column types data frames
-    col_types: DataFrame = concat([expression_col_types, phenotype_col_types], axis=1)
-    # TODO: col_types: DataFrame = concat([col_types, mri_col_types], axis=1)
+    # TODO: col_types: DataFrame = concat([phenotypes_col_types, expression_col_types, mri_col_types], axis=1)
+    col_types: DataFrame = concat([phenotypes_col_types, expression_col_types], axis=1)
 
     # Save the CSV that will serve as the basis for future feature reduction
-    combined_data.to_csv(BASE_CSV_PATH.format(cohort, dataset), index=False)
-    col_types.to_csv(COL_TYPES_PATH.format(cohort, dataset), index=False)
+    combined_data.to_csv(BASE_DATA_PATH.format(cohort, dataset_name), index=False)
+    col_types.to_csv(BASE_COL_TYPES_PATH.format(cohort, dataset_name), index=False)
 
 
-def process_numeric_data(top_dir: str, cohort: str, csv: str, do_normalize: bool = True):
-    """Processes a data set that is complete, needs no targets, and entirely numeric"""
+def load_data(data_name: str, cohort: str) -> tuple:
+    """Loads one of the data sets to be combined"""
 
-    data_path: str = '{}/{}/{}.csv'.format(top_dir, cohort, csv)
-    data: DataFrame = read_csv(data_path, low_memory=False)
-    ptid_col: DataFrame = get_del_col(data_set=data, col_types=None, col_name=PTID_COL)
-
-    if do_normalize:
-        data: DataFrame = normalize(df=data)
-
-    columns: list = list(data)
-    col_types: DataFrame = get_numeric_col_types(columns=columns)
-    data: DataFrame = concat([ptid_col, data], axis=1)
-    n_cols: int = len(columns)
-    return data, col_types, n_cols
-
-
-def load_phenotype_data(cohort: str):
-    """Loads the phenotypic data that was processed by the phenotypes handler"""
-
-    phenotypes_path: str = PHENOTYPES_PATH.format(cohort)
-    phenotype_data: DataFrame = read_csv(phenotypes_path)
-    col_types_path: str = PHENOTYPES_COL_TYPES_PATH.format(cohort)
-    phenotype_col_types: DataFrame = read_csv(col_types_path)
-    n_phenotype_cols: int = phenotype_data.shape[-1] - 1
-    return phenotype_data, phenotype_col_types, n_phenotype_cols
+    data_path: str = BASE_DATA_PATH.format(cohort, data_name)
+    data: DataFrame = read_csv(data_path)
+    col_types_path: str = BASE_COL_TYPES_PATH.format(cohort, data_name)
+    col_types: DataFrame = read_csv(col_types_path)
+    return data, col_types

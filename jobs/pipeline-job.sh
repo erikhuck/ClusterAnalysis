@@ -14,4 +14,4 @@ sbatch -J $JOB_NAME \
     --mem=256G \
     -o ${JOB_NAME}.out \
     -e ${JOB_NAME}.err \
-    ${SCRIPT_NAME}.sh ${COHORT} ${DATASET} ${N_CLUSTERS} ${N_ITERATIONS}
+    jobs/${SCRIPT_NAME}.sh ${COHORT} ${DATASET} ${N_CLUSTERS} ${N_ITERATIONS}

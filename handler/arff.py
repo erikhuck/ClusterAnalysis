@@ -3,8 +3,7 @@
 from pandas import DataFrame, read_csv, Series, merge
 
 from handler.utils import (
-    ARFF_PATH, PTID_COL, CLUSTERING_PATH, CLUSTER_ID_COL, NUMERIC_COL_TYPE, BASE_CSV_PATH, COL_TYPES_PATH,
-    get_kept_feats, KEPT_FEATS_PATH
+    ARFF_PATH, PTID_COL, CLUSTERING_PATH, CLUSTER_ID_COL, NUMERIC_COL_TYPE, get_data_path, get_col_types_path
 )
 
 
@@ -16,23 +15,19 @@ def arff_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n
         cohort, dataset, iteration, n_kept_feats, n_clusters, clustering_score
     )
     clustering: DataFrame = read_csv(clustering_path)
-    data_path: str = BASE_CSV_PATH.format(cohort, dataset)
+    data_path: str = get_data_path(
+        cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
+    )
     data: DataFrame = read_csv(data_path)
     data: DataFrame = merge(data, clustering, on=PTID_COL, how='inner')
 
-    col_types_path: str = COL_TYPES_PATH.format(cohort, dataset)
+    # Since the clustering labels are for selecting features, we do not want to include the patient IDs in the ARFF
+    del data[PTID_COL]
+
+    col_types_path: str = get_col_types_path(
+        cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
+    )
     col_types: DataFrame = read_csv(col_types_path)
-
-    if iteration == 0:
-        # Since the clustering labels are for selecting features, we do not want the patient ids
-        del data[PTID_COL]
-    else:
-        kept_feats_path: str = KEPT_FEATS_PATH.format(cohort, dataset, iteration - 1, n_kept_feats, n_clusters)
-
-        # The patient IDs will be removed too since it is impossible for PTID to be a selected feature
-        data, col_types = get_kept_feats(
-            kept_feats_path=kept_feats_path, data=data, col_types=col_types, keep_cluster_id=True
-        )
 
     # Convert the data to ARFF format and save it as an ARFF file
     arff_path: str = ARFF_PATH.format(cohort, dataset, iteration, n_kept_feats, n_clusters)
