@@ -1,16 +1,21 @@
 """Combines the data sets into one"""
 
 from pandas import DataFrame, merge, concat, read_csv
-from handler.utils import PTID_COL, BASE_DATA_PATH, BASE_COL_TYPES_PATH
+from handler.utils import PTID_COL, BASE_DATA_PATH, BASE_COL_TYPES_PATH, DEBUG_IDENTIFIER
 
 
-def combine_handler(cohort: str):
+def combine_handler(cohort: str, do_debug: bool):
     """Main method of this module"""
 
     dataset_name: str = 'combined'
     phenotypes_data_name: str = 'phenotypes'
     expression_data_name: str = 'expression'
     mri_data_name: str = 'mri'
+
+    if do_debug:
+        dataset_name: str = DEBUG_IDENTIFIER + dataset_name
+        expression_data_name: str = DEBUG_IDENTIFIER + expression_data_name
+        mri_data_name: str = DEBUG_IDENTIFIER + mri_data_name
 
     # Load the data
     phenotypes_data, phenotypes_col_types = load_data(data_name=phenotypes_data_name, cohort=cohort)

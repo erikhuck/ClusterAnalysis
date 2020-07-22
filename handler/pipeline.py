@@ -21,20 +21,6 @@ def pipeline_handler(cohort: str, dataset: str, n_clusters: int, n_iterations: i
 
         mkdir(iter_dir)
 
-        # Begin with creating the CSV that is processed for the purpose of clustering
-        command: str = get_command(
-            handler='csv', cohort=cohort, iteration=iteration, dataset=dataset, n_kept_feats=n_kept_feats,
-            n_clusters=n_clusters
-        )
-
-        # We need to get the initial number of kept features which is equal to the total amount of original features
-        # This is only equal to the original amount of features on iteration 0, prior to which n_kept_feats is None
-        # Setting n_kept_feats on this line does nothing beyond iteration 0, but on iteration 0 it needs to happen
-        n_kept_feats: str = popen(command).read()
-        n_kept_feats: int = int(n_kept_feats)
-
-        print('Number Of Remaining Features:', n_kept_feats)
-
         # Cluster the data and get the cluster label which corresponds to each individual
         command: str = get_command(
             handler='cluster', cohort=cohort, iteration=iteration, dataset=dataset, n_kept_feats=n_kept_feats,
@@ -58,9 +44,6 @@ def pipeline_handler(cohort: str, dataset: str, n_clusters: int, n_iterations: i
             handler='feat-select', cohort=cohort, iteration=iteration, dataset=dataset, n_kept_feats=n_kept_feats,
             n_clusters=n_clusters
         )
-
-        # Now we get the number of kept features after the actual feature selection algorithm
-        # After iteration 0, this is where we will really get the value for n_kept_feats
         n_kept_feats: str = popen(command).read()
         n_kept_feats: int = int(n_kept_feats)
 
@@ -75,7 +58,7 @@ def get_command(
         handler, cohort, iteration, dataset
     )
 
-    if iteration == 0 and handler == 'csv':
+    if iteration == 0:
         assert n_kept_feats is None
     else:
         assert n_kept_feats is not None

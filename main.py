@@ -3,11 +3,21 @@
 from argparse import ArgumentParser, Namespace
 import sys
 
+from handler.debug_datasets import debug_datasets_handler
 from handler.combine import combine_handler
 from handler.cluster import cluster_handler
 from handler.arff import arff_handler
 from handler.feat_select import feat_select_handler
 from handler.pipeline import pipeline_handler
+
+
+def add_do_debug_arg(parser: ArgumentParser):
+    """Adds the do-debug argument to a parser"""
+
+    parser.add_argument(
+        '--do-debug', required=False, action='store_true',
+        help='Whether we are currently debugging or not'
+    )
 
 
 def add_cohort_arg(parser: ArgumentParser):
@@ -73,9 +83,18 @@ def parse_args(argv) -> Namespace:
     subparsers = parser.add_subparsers(dest='handler_type', title='handler_type')
     subparsers.required = True
 
+    # Configure the debug-datasets handler
+    debug_datasets_parser: ArgumentParser = subparsers.add_parser('debug-datasets')
+    add_cohort_arg(parser=debug_datasets_parser)
+    debug_datasets_parser.add_argument(
+        '--data-name', type=str, required=True,
+        help='The name of the data set to create a debugging version for'
+    )
+
     # Configure the combine handler
     combine_parser: ArgumentParser = subparsers.add_parser('combine')
     add_cohort_arg(parser=combine_parser)
+    add_do_debug_arg(parser=combine_parser)
 
     # Configure the cluster handler
     cluster_parser: ArgumentParser = subparsers.add_parser('cluster')
@@ -84,6 +103,7 @@ def parse_args(argv) -> Namespace:
     # Configure the arff handler
     arff_parser: ArgumentParser = subparsers.add_parser('arff')
     add_file_path_args(parser=arff_parser)
+    # TODO: Check if this should be float
     arff_parser.add_argument(
         '--clustering-score', type=str, required=True,
         help='The clustering score of the previous clustering'
@@ -105,6 +125,7 @@ def parse_args(argv) -> Namespace:
 
     args: Namespace = parser.parse_args(argv)
 
+    # TODO: Check if this is still necessary
     if hasattr(args, 'clustering_score') and args.clustering_score is None:
         args.clustering_score = 'no_score'
 
@@ -116,9 +137,12 @@ def main(argv: list):
 
     args: Namespace = parse_args(argv)
 
-    if args.handler_type == 'combine':
+    if args.handler_type == 'debug-datasets':
+        # Create a smaller version (less columns) of a data set for debugging
+        debug_datasets_handler(cohort=args.cohort, data_name=args.data_name)
+    elif args.handler_type == 'combine':
         # Combine the phenotypes, MRI data, and gene expression data into a single data set
-        combine_handler(cohort=args.cohort)
+        combine_handler(cohort=args.cohort, do_debug=args.do_debug)
     elif args.handler_type == 'cluster':
         # Obtain the cluster labels for the ARFF
         cluster_handler(

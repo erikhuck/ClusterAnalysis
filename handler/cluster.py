@@ -6,7 +6,8 @@ from sklearn.metrics import silhouette_score
 from numpy import ndarray
 
 from handler.utils import (
-    PTID_COL, CLUSTERING_PATH, CLUSTER_ID_COL, get_data_path, get_col_types_path, NOMINAL_COL_TYPE, NUMERIC_COL_TYPE
+    get_del_ptid_col, CLUSTERING_PATH, CLUSTER_ID_COL, get_data_path, get_col_types_path, NOMINAL_COL_TYPE,
+    NUMERIC_COL_TYPE
 )
 
 
@@ -26,9 +27,13 @@ def cluster_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int
     clustering_score: float = round(clustering_score, 2)
     print(clustering_score)
 
-    # Save the clustering
     labels: DataFrame = DataFrame(labels, columns=[CLUSTER_ID_COL])
     clustering: DataFrame = concat([ptid_col, labels], axis=1)
+
+    if n_kept_feats is None:
+        n_kept_feats: int = data.shape[-1]
+
+    # Save the clustering
     clustering_path: str = CLUSTERING_PATH.format(
         cohort, dataset, iteration, n_kept_feats, n_clusters, clustering_score
     )
@@ -76,12 +81,3 @@ def get_cols_by_type(data_set: DataFrame, data_types: DataFrame, col_type: str) 
     cols: list = list(cols)
     data: DataFrame = data_set[cols]
     return data, cols
-
-
-def get_del_ptid_col(data_set: DataFrame) -> DataFrame:
-    """Obtains and deletes a column from the data set"""
-
-    col: DataFrame = data_set[[PTID_COL]].copy()
-    del data_set[PTID_COL]
-
-    return col

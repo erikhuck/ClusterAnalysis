@@ -10,15 +10,22 @@ from handler.utils import (
 def arff_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n_clusters: int, clustering_score: str):
     """Main function of this module"""
 
-    # Combine the data with the clustering labels
-    clustering_path: str = CLUSTERING_PATH.format(
-        cohort, dataset, iteration, n_kept_feats, n_clusters, clustering_score
-    )
-    clustering: DataFrame = read_csv(clustering_path)
+    # Load the data
     data_path: str = get_data_path(
         cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
     )
     data: DataFrame = read_csv(data_path)
+
+    if n_kept_feats is None:
+        n_kept_feats: int = data.shape[-1]
+
+    # Load the clustering
+    clustering_path: str = CLUSTERING_PATH.format(
+        cohort, dataset, iteration, n_kept_feats, n_clusters, clustering_score
+    )
+    clustering: DataFrame = read_csv(clustering_path)
+
+    # Combine the data with the clustering labels
     data: DataFrame = merge(data, clustering, on=PTID_COL, how='inner')
 
     # Since the clustering labels are for selecting features, we do not want to include the patient IDs in the ARFF
