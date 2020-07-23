@@ -1,6 +1,6 @@
 """Contains functionality data shared between handlers"""
 
-from pandas import DataFrame
+from pandas import DataFrame, read_csv
 
 PTID_COL: str = 'PTID'
 CLUSTERING_PATH: str = 'clean-data/{}/{}/iter{}/clustering-{}-{}-{}.csv'
@@ -46,6 +46,28 @@ def get_col_types_path(cohort: str, dataset: str, iteration: int, n_kept_feats: 
         cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters,
         base_path=BASE_COL_TYPES_PATH, path=COL_TYPES_PATH
     )
+
+
+def get_data(cohort: str, dataset: str, iteration: int, n_kept_feats: int, n_clusters: int) -> tuple:
+    """Gets a data set, it's column types and n_kept_feats if at the beginning of the clustering pipeline"""
+
+    data_path: str = get_data_path(
+        cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
+    )
+    data: DataFrame = read_csv(data_path)
+
+    col_types_path: str = get_col_types_path(
+        cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
+    )
+    col_types: DataFrame = read_csv(col_types_path)
+
+    if n_kept_feats is None:
+        n_kept_feats: int = col_types.shape[-1]
+    else:
+        # TODO: It appears that passing in --n-kept-feats is pointless
+        assert n_kept_feats == col_types.shape[-1]
+
+    return data, col_types, n_kept_feats
 
 
 def get_del_ptid_col(data_set: DataFrame) -> DataFrame:

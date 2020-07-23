@@ -3,7 +3,7 @@
 from pandas import DataFrame, read_csv, Series, merge
 
 from handler.utils import (
-    ARFF_PATH, PTID_COL, CLUSTERING_PATH, CLUSTER_ID_COL, NUMERIC_COL_TYPE, get_data_path, get_col_types_path
+    ARFF_PATH, PTID_COL, CLUSTERING_PATH, CLUSTER_ID_COL, NUMERIC_COL_TYPE, get_data
 )
 
 
@@ -11,13 +11,9 @@ def arff_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n
     """Main function of this module"""
 
     # Load the data
-    data_path: str = get_data_path(
+    data, col_types, n_kept_feats = get_data(
         cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
     )
-    data: DataFrame = read_csv(data_path)
-
-    if n_kept_feats is None:
-        n_kept_feats: int = data.shape[-1]
 
     # Load the clustering
     clustering_path: str = CLUSTERING_PATH.format(
@@ -30,11 +26,6 @@ def arff_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n
 
     # Since the clustering labels are for selecting features, we do not want to include the patient IDs in the ARFF
     del data[PTID_COL]
-
-    col_types_path: str = get_col_types_path(
-        cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
-    )
-    col_types: DataFrame = read_csv(col_types_path)
 
     # Convert the data to ARFF format and save it as an ARFF file
     arff_path: str = ARFF_PATH.format(cohort, dataset, iteration, n_kept_feats, n_clusters)

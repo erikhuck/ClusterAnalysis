@@ -39,13 +39,14 @@ def pipeline_handler(cohort: str, dataset: str, n_clusters: int, n_iterations: i
         popen(command).read()
 
         # Select the best portion of the features according to the cluster labels and a WEKA algorithm
-        # The amount of remaining features will thus be even smaller than the previous iteration
+        # The amount of remaining features will be smaller than the previous iteration
         command: str = get_command(
             handler='feat-select', cohort=cohort, iteration=iteration, dataset=dataset, n_kept_feats=n_kept_feats,
             n_clusters=n_clusters
         )
         n_kept_feats: str = popen(command).read()
         n_kept_feats: int = int(n_kept_feats)
+        print('Number Of Features Remaining:', n_kept_feats)
 
 
 def get_command(

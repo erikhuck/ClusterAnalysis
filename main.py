@@ -9,6 +9,7 @@ from handler.cluster import cluster_handler
 from handler.arff import arff_handler
 from handler.feat_select import feat_select_handler
 from handler.pipeline import pipeline_handler
+from handler.utils import DEBUG_IDENTIFIER
 
 
 def add_do_debug_arg(parser: ArgumentParser):
@@ -86,38 +87,39 @@ def parse_args(argv) -> Namespace:
     # Configure the debug-datasets handler
     debug_datasets_parser: ArgumentParser = subparsers.add_parser('debug-datasets')
     add_cohort_arg(parser=debug_datasets_parser)
-    debug_datasets_parser.add_argument(
-        '--data-name', type=str, required=True,
-        help='The name of the data set to create a debugging version for'
-    )
+    add_dataset_arg(parser=debug_datasets_parser)
 
     # Configure the combine handler
     combine_parser: ArgumentParser = subparsers.add_parser('combine')
     add_cohort_arg(parser=combine_parser)
+    add_dataset_arg(parser=combine_parser)
     add_do_debug_arg(parser=combine_parser)
 
     # Configure the cluster handler
     cluster_parser: ArgumentParser = subparsers.add_parser('cluster')
     add_file_path_args(parser=cluster_parser)
+    add_do_debug_arg(parser=cluster_parser)
 
     # Configure the arff handler
     arff_parser: ArgumentParser = subparsers.add_parser('arff')
     add_file_path_args(parser=arff_parser)
-    # TODO: Check if this should be float
+    add_do_debug_arg(parser=arff_parser)
     arff_parser.add_argument(
-        '--clustering-score', type=str, required=True,
+        '--clustering-score', type=float, required=True,
         help='The clustering score of the previous clustering'
     )
 
     # Configure the feat-select handler
     feat_select_parser: ArgumentParser = subparsers.add_parser('feat-select')
     add_file_path_args(parser=feat_select_parser)
+    add_do_debug_arg(parser=feat_select_parser)
 
     # Configure the pipeline handler
     pipeline_parser: ArgumentParser = subparsers.add_parser('pipeline')
     add_cohort_arg(parser=pipeline_parser)
     add_dataset_arg(parser=pipeline_parser)
     add_n_clusters_arg(parser=pipeline_parser)
+    add_do_debug_arg(parser=pipeline_parser)
     pipeline_parser.add_argument(
         '--n-iterations', type=int, required=True,
         help='The number of iterations to reduce the features and re-cluster'
@@ -125,9 +127,9 @@ def parse_args(argv) -> Namespace:
 
     args: Namespace = parser.parse_args(argv)
 
-    # TODO: Check if this is still necessary
-    if hasattr(args, 'clustering_score') and args.clustering_score is None:
-        args.clustering_score = 'no_score'
+    if hasattr(args, 'do_debug') and args.do_debug is True:
+        assert hasattr(args, 'dataset')
+        args.dataset = DEBUG_IDENTIFIER + args.dataset
 
     return args
 
@@ -139,10 +141,10 @@ def main(argv: list):
 
     if args.handler_type == 'debug-datasets':
         # Create a smaller version (less columns) of a data set for debugging
-        debug_datasets_handler(cohort=args.cohort, data_name=args.data_name)
+        debug_datasets_handler(cohort=args.cohort, dataset=args.dataset)
     elif args.handler_type == 'combine':
         # Combine the phenotypes, MRI data, and gene expression data into a single data set
-        combine_handler(cohort=args.cohort, do_debug=args.do_debug)
+        combine_handler(cohort=args.cohort, dataset=args.dataset, do_debug=args.do_debug)
     elif args.handler_type == 'cluster':
         # Obtain the cluster labels for the ARFF
         cluster_handler(

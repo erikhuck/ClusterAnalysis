@@ -1,37 +1,32 @@
 """Runs a clustering algorithm on a data set and labels the data"""
 
-from pandas import read_csv, DataFrame, concat, Series, get_dummies
+from pandas import DataFrame, concat, Series, get_dummies
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score
 from numpy import ndarray
 
 from handler.utils import (
-    get_del_ptid_col, CLUSTERING_PATH, CLUSTER_ID_COL, get_data_path, get_col_types_path, NOMINAL_COL_TYPE,
-    NUMERIC_COL_TYPE
+    get_del_ptid_col, CLUSTERING_PATH, CLUSTER_ID_COL, get_data, NOMINAL_COL_TYPE, NUMERIC_COL_TYPE
 )
 
 
 def cluster_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n_clusters: int):
     """Main function of this module"""
 
-    data: DataFrame = get_data_set(
+    data, ptid_col, n_kept_feats = get_data_set(
         cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
     )
-    ptid_col: DataFrame = get_del_ptid_col(data_set=data)
-    data: ndarray = data.to_numpy()
+
     model = SpectralClustering(
-        n_clusters=n_clusters, affinity='nearest_neighbors', assign_labels='kmeans', random_state=0
+        n_clusters=n_clusters, affinity='rbf', assign_labels='kmeans', random_state=0
     )
-    labels = model.fit_predict(data)
+    labels: ndarray = model.fit_predict(data)
     clustering_score: float = silhouette_score(data, labels)
     clustering_score: float = round(clustering_score, 2)
     print(clustering_score)
 
     labels: DataFrame = DataFrame(labels, columns=[CLUSTER_ID_COL])
     clustering: DataFrame = concat([ptid_col, labels], axis=1)
-
-    if n_kept_feats is None:
-        n_kept_feats: int = data.shape[-1]
 
     # Save the clustering
     clustering_path: str = CLUSTERING_PATH.format(
@@ -40,17 +35,12 @@ def cluster_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int
     clustering.to_csv(clustering_path, index=False)
 
 
-def get_data_set(cohort: str, dataset: str, iteration: int, n_kept_feats: int, n_clusters: int) -> DataFrame:
+def get_data_set(cohort: str, dataset: str, iteration: int, n_kept_feats: int, n_clusters: int) -> tuple:
     """Creates the final data set from the selected features and one-hot encoded nominal columns"""
 
-    data_path: str = get_data_path(
+    data, col_types, n_kept_feats = get_data(
         cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
     )
-    data: DataFrame = read_csv(data_path)
-    col_types_path: str = get_col_types_path(
-        cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
-    )
-    col_types: DataFrame = read_csv(col_types_path)
 
     # Temporarily take out the patient id column
     ptid_col: DataFrame = get_del_ptid_col(data_set=data)
@@ -67,10 +57,7 @@ def get_data_set(cohort: str, dataset: str, iteration: int, n_kept_feats: int, n
     # Combine the numeric and nominal columns into one complete data set
     data: DataFrame = concat([numeric_data, nominal_data], axis=1)
 
-    # Merge the PTID column back in
-    data: DataFrame = concat([ptid_col, data], axis=1)
-
-    return data
+    return data.to_numpy(), ptid_col, n_kept_feats
 
 
 def get_cols_by_type(data_set: DataFrame, data_types: DataFrame, col_type: str) -> tuple:
