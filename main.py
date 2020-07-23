@@ -9,6 +9,7 @@ from handler.cluster import cluster_handler
 from handler.arff import arff_handler
 from handler.feat_select import feat_select_handler
 from handler.pipeline import pipeline_handler
+from handler.genotypes import genotypes_handler
 from handler.utils import DEBUG_IDENTIFIER
 
 
@@ -125,6 +126,16 @@ def parse_args(argv) -> Namespace:
         help='The number of iterations to reduce the features and re-cluster'
     )
 
+    # Configure the genotypes handler
+    genotypes_parser: ArgumentParser = subparsers.add_parser('genotypes')
+    add_cohort_arg(parser=genotypes_parser)
+    add_dataset_arg(parser=genotypes_parser)
+    add_do_debug_arg(parser=genotypes_parser)
+    genotypes_parser.add_argument(
+        '--clustering-path', type=str, required=True,
+        help='The path to the clustering to use as classification labels'
+    )
+
     args: Namespace = parser.parse_args(argv)
 
     if hasattr(args, 'do_debug') and args.do_debug is True:
@@ -166,6 +177,10 @@ def main(argv: list):
     elif args.handler_type == 'pipeline':
         pipeline_handler(
             cohort=args.cohort, dataset=args.dataset, n_clusters=args.n_clusters, n_iterations=args.n_iterations
+        )
+    elif args.handler_type == 'genotypes':
+        genotypes_handler(
+            cohort=args.cohort, dataset=args.dataset, clustering_path=args.clustering_path
         )
 
 
