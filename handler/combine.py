@@ -4,16 +4,14 @@ from pandas import DataFrame, merge, concat, read_csv
 from handler.utils import PTID_COL, BASE_DATA_PATH, BASE_COL_TYPES_PATH, DEBUG_IDENTIFIER
 
 
-def combine_handler(cohort: str, do_debug: bool):
+def combine_handler(cohort: str, dataset: str, do_debug: bool):
     """Main method of this module"""
 
-    dataset_name: str = 'combined'
     phenotypes_data_name: str = 'phenotypes'
     expression_data_name: str = 'expression'
     mri_data_name: str = 'mri'
 
     if do_debug:
-        dataset_name: str = DEBUG_IDENTIFIER + dataset_name
         expression_data_name: str = DEBUG_IDENTIFIER + expression_data_name
         mri_data_name: str = DEBUG_IDENTIFIER + mri_data_name
 
@@ -31,8 +29,8 @@ def combine_handler(cohort: str, do_debug: bool):
     col_types: DataFrame = concat([phenotypes_col_types, expression_col_types], axis=1)
 
     # Save the CSV that will serve as the basis for future feature reduction
-    combined_data.to_csv(BASE_DATA_PATH.format(cohort, dataset_name), index=False)
-    col_types.to_csv(BASE_COL_TYPES_PATH.format(cohort, dataset_name), index=False)
+    combined_data.to_csv(BASE_DATA_PATH.format(cohort, dataset), index=False)
+    col_types.to_csv(BASE_COL_TYPES_PATH.format(cohort, dataset), index=False)
 
 
 def load_data(data_name: str, cohort: str) -> tuple:

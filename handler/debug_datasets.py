@@ -6,16 +6,16 @@ from numpy.random import shuffle, seed
 from handler.utils import BASE_DATA_PATH, BASE_COL_TYPES_PATH, get_del_ptid_col, DEBUG_IDENTIFIER
 
 
-def debug_datasets_handler(cohort: str, data_name: str):
+def debug_datasets_handler(cohort: str, dataset: str):
     """Main method of this module"""
 
-    n_debug_cols: int = 10000
+    n_debug_cols: int = 1000
 
     # Seed the numpy random number generator for consistency
     seed(0)
 
     # Read the data
-    data_path: str = BASE_DATA_PATH.format(cohort, data_name)
+    data_path: str = BASE_DATA_PATH.format(cohort, dataset)
     data: DataFrame = read_csv(data_path)
 
     ptid_col: DataFrame = get_del_ptid_col(data_set=data)
@@ -27,15 +27,15 @@ def debug_datasets_handler(cohort: str, data_name: str):
     data: DataFrame = data[shuffled_cols]
 
     # Sample the column types accordingly
-    col_types_path: str = BASE_COL_TYPES_PATH.format(cohort, data_name)
+    col_types_path: str = BASE_COL_TYPES_PATH.format(cohort, dataset)
     col_types: DataFrame = read_csv(col_types_path)
     col_types: DataFrame = col_types[shuffled_cols].copy()
 
     data: DataFrame = concat([ptid_col, data], axis=1)
 
     # Save the debug data set and column types
-    data_name: str = DEBUG_IDENTIFIER + data_name
-    debug_data_path: str = BASE_DATA_PATH.format(cohort, data_name)
-    debug_col_types_path: str = BASE_COL_TYPES_PATH.format(cohort, data_name)
+    dataset: str = DEBUG_IDENTIFIER + dataset
+    debug_data_path: str = BASE_DATA_PATH.format(cohort, dataset)
+    debug_col_types_path: str = BASE_COL_TYPES_PATH.format(cohort, dataset)
     data.to_csv(debug_data_path, index=False)
     col_types.to_csv(debug_col_types_path, index=False)
