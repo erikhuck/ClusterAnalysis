@@ -2,11 +2,11 @@
 
 SCRIPT_NAME="debug-datasets"
 COHORT="adni"
-DATASET="mri"
+DATASET="genotypes"
 JOB_NAME=${SCRIPT_NAME}-${COHORT}-${DATASET}
 
 sbatch -J $JOB_NAME \
-    --time=00-18:00:00 \
+    --time=00-16:00:00 \
     --nodes=1 \
     --ntasks=1 \
     --mem=256G \

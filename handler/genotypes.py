@@ -15,6 +15,7 @@ def genotypes_handler(cohort: str, dataset: str, clustering_path: str):
     data_path: str = get_data_path(
         cohort=cohort, dataset=dataset, iteration=0, n_kept_feats=None, n_clusters=None
     )
-    data: DataFrame = read_csv(data_path)
 
+    # TODO: Not tested below this point
+    data: DataFrame = read_csv(data_path)
     data: DataFrame = merge(data, clustering, on=PTID_COL, how='inner')
