@@ -48,6 +48,15 @@ def add_dataset_arg(parser: ArgumentParser):
     )
 
 
+def add_cluster_method_arg(parser: ArgumentParser):
+    """Adds the cohort argument to a parser"""
+
+    parser.add_argument(
+        '--cluster-method', type=str, required=True,
+        help='Which clustering method to use; choices: rbf, nearest_neighbors'
+    )
+
+
 def add_n_kept_feats_arg(parser: ArgumentParser):
     """Adds the number of kept features argument to the parser"""
 
@@ -74,6 +83,7 @@ def add_file_path_args(parser: ArgumentParser):
     add_dataset_arg(parser=parser)
     add_n_kept_feats_arg(parser=parser)
     add_n_clusters_arg(parser=parser)
+    add_cluster_method_arg(parser=parser)
 
 
 def parse_args(argv) -> Namespace:
@@ -120,9 +130,14 @@ def parse_args(argv) -> Namespace:
     add_dataset_arg(parser=pipeline_parser)
     add_n_clusters_arg(parser=pipeline_parser)
     add_do_debug_arg(parser=pipeline_parser)
+    add_cluster_method_arg(parser=pipeline_parser)
     pipeline_parser.add_argument(
         '--n-iterations', type=int, required=True,
         help='The number of iterations to reduce the features and re-cluster'
+    )
+    pipeline_parser.add_argument(
+        '--do-continue', required=False, action='store_true',
+        help='Whether to continue the pipeline from its latest iteration or not'
     )
 
     args: Namespace = parser.parse_args(argv)
@@ -148,24 +163,26 @@ def main(argv: list):
     elif args.handler_type == 'cluster':
         # Obtain the cluster labels for the ARFF
         cluster_handler(
-            cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
-            n_clusters=args.n_clusters
+            cohort=args.cohort, dataset=args.dataset, cluster_method=args.cluster_method, n_clusters=args.n_clusters,
+            iteration=args.iteration, n_kept_feats=args.n_kept_feats
         )
     elif args.handler_type == 'arff':
         # Make the ARFF to be used with WEKA
         arff_handler(
-            cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
-            n_clusters=args.n_clusters, clustering_score=args.clustering_score
+            cohort=args.cohort, dataset=args.dataset, cluster_method=args.cluster_method, n_clusters=args.n_clusters,
+            iteration=args.iteration, n_kept_feats=args.n_kept_feats, clustering_score=args.clustering_score
         )
     elif args.handler_type == 'feat-select':
         # Select the features from the ARFF using WEKA
         feat_select_handler(
-            cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
-            n_clusters=args.n_clusters
+            cohort=args.cohort, dataset=args.dataset, cluster_method=args.cluster_method, n_clusters=args.n_clusters,
+            iteration=args.iteration, n_kept_feats=args.n_kept_feats
         )
     elif args.handler_type == 'pipeline':
+        # cohort: str, dataset: str, cluster_method: str, n_clusters: int, n_iterations: int, do_continue: bool
         pipeline_handler(
-            cohort=args.cohort, dataset=args.dataset, n_clusters=args.n_clusters, n_iterations=args.n_iterations
+            cohort=args.cohort, dataset=args.dataset, cluster_method=args.cluster_method, n_clusters=args.n_clusters,
+            n_iterations=args.n_iterations, do_continue=args.do_continue
         )
 
 

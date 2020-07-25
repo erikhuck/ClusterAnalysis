@@ -7,17 +7,21 @@ from handler.utils import (
 )
 
 
-def arff_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n_clusters: int, clustering_score: str):
+def arff_handler(
+    cohort: str, dataset: str, cluster_method: str, n_clusters: int, iteration: int, n_kept_feats: int,
+    clustering_score: float
+):
     """Main function of this module"""
 
     # Load the data
     data, col_types, n_kept_feats = get_data(
-        cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
+        cohort=cohort, dataset=dataset, cluster_method=cluster_method, n_clusters=n_clusters, iteration=iteration,
+        n_kept_feats=n_kept_feats
     )
 
     # Load the clustering
     clustering_path: str = CLUSTERING_PATH.format(
-        cohort, dataset, iteration, n_kept_feats, n_clusters, clustering_score
+        cohort, dataset, cluster_method, n_clusters, iteration, n_kept_feats, clustering_score
     )
     clustering: DataFrame = read_csv(clustering_path)
 
@@ -28,7 +32,7 @@ def arff_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n
     del data[PTID_COL]
 
     # Convert the data to ARFF format and save it as an ARFF file
-    arff_path: str = ARFF_PATH.format(cohort, dataset, iteration, n_kept_feats, n_clusters)
+    arff_path: str = ARFF_PATH.format(cohort, dataset, cluster_method, n_clusters, iteration, n_kept_feats)
     save_data(arff_path=arff_path, arff_data=data, col_types=col_types, target_col=CLUSTER_ID_COL, cohort=cohort)
 
 
