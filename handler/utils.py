@@ -3,6 +3,8 @@
 from pandas import DataFrame, read_csv
 
 PTID_COL: str = 'PTID'
+DATA_DIR: str = 'clean-data'
+CSV_EXTENSION: str = '.csv'
 CLUSTERING_PATH: str = 'clean-data/{}/{}/{}/k={}/iter{}/clustering-{}-{}.csv'
 ARFF_PATH: str = 'clean-data/{}/{}/{}/k={}/iter{}/data-{}.arff'
 DATA_PATH: str = 'clean-data/{}/{}/{}/k={}/iter{}/data-{}.csv'

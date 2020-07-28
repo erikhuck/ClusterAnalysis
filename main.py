@@ -9,6 +9,7 @@ from handler.cluster import cluster_handler
 from handler.arff import arff_handler
 from handler.feat_select import feat_select_handler
 from handler.pipeline import pipeline_handler
+from handler.best_clustering import best_clustering_handler
 from handler.utils import DEBUG_IDENTIFIER
 
 
@@ -140,6 +141,11 @@ def parse_args(argv) -> Namespace:
         help='Whether to continue the pipeline from its latest iteration or not'
     )
 
+    # Configure the best-clustering handler
+    best_clustering_parser: ArgumentParser = subparsers.add_parser('best-clustering')
+    add_cohort_arg(parser=best_clustering_parser)
+    add_dataset_arg(parser=best_clustering_parser)
+
     args: Namespace = parser.parse_args(argv)
 
     if hasattr(args, 'do_debug') and args.do_debug is True:
@@ -179,11 +185,12 @@ def main(argv: list):
             iteration=args.iteration, n_kept_feats=args.n_kept_feats
         )
     elif args.handler_type == 'pipeline':
-        # cohort: str, dataset: str, cluster_method: str, n_clusters: int, n_iterations: int, do_continue: bool
         pipeline_handler(
             cohort=args.cohort, dataset=args.dataset, cluster_method=args.cluster_method, n_clusters=args.n_clusters,
             n_iterations=args.n_iterations, do_continue=args.do_continue
         )
+    elif args.handler_type == 'best-clustering':
+        best_clustering_handler(cohort=args.cohort, dataset=args.dataset)
 
 
 if __name__ == '__main__':

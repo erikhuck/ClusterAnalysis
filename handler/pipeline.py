@@ -4,6 +4,8 @@ from os.path import join, isdir
 from os import mkdir, popen, listdir
 from shutil import rmtree
 
+from handler.utils import DATA_DIR, CSV_EXTENSION
+
 ITER_DIR: str = 'iter'
 
 
@@ -78,7 +80,7 @@ def get_command(
 def make_data_dirs(cohort: str, dataset: str, cluster_method: str, n_clusters: int) -> str:
     """Creates the directories which wil contain all the data"""
 
-    data_dir: str = 'clean-data'
+    data_dir: str = DATA_DIR
 
     for subdir in (cohort, dataset, cluster_method, 'k=' + str(n_clusters)):
         data_dir: str = join(data_dir, subdir)
@@ -93,7 +95,6 @@ def continue_after_last_iter(data_dir: str, do_continue: bool) -> int:
     """Gets the iteration and number of kept features from the latest iteration in order to continue to the next"""
 
     col_types_path_part: str = 'col-types-'
-    csv_path_part: str = '.csv'
 
     if do_continue:
         # Start where we last left off
@@ -117,7 +118,7 @@ def continue_after_last_iter(data_dir: str, do_continue: bool) -> int:
 
             for path in listdir(iter_dir):
                 if col_types_path_part in path:
-                    n_kept_feats: str = path[len(col_types_path_part):-len(csv_path_part)]
+                    n_kept_feats: str = path[len(col_types_path_part):-len(CSV_EXTENSION)]
                     n_kept_feats: int = int(n_kept_feats)
                     break
 
