@@ -10,6 +10,7 @@ from handler.arff import arff_handler
 from handler.feat_select import feat_select_handler
 from handler.pipeline import pipeline_handler
 from handler.genotypes import genotypes_handler
+from handler.best_clustering import best_clustering_handler
 from handler.utils import DEBUG_IDENTIFIER
 
 
@@ -49,6 +50,15 @@ def add_dataset_arg(parser: ArgumentParser):
     )
 
 
+def add_cluster_method_arg(parser: ArgumentParser):
+    """Adds the cohort argument to a parser"""
+
+    parser.add_argument(
+        '--cluster-method', type=str, required=True,
+        help='Which clustering method to use; choices: rbf, nearest_neighbors'
+    )
+
+
 def add_n_kept_feats_arg(parser: ArgumentParser):
     """Adds the number of kept features argument to the parser"""
 
@@ -75,6 +85,7 @@ def add_file_path_args(parser: ArgumentParser):
     add_dataset_arg(parser=parser)
     add_n_kept_feats_arg(parser=parser)
     add_n_clusters_arg(parser=parser)
+    add_cluster_method_arg(parser=parser)
 
 
 def parse_args(argv) -> Namespace:
@@ -121,10 +132,20 @@ def parse_args(argv) -> Namespace:
     add_dataset_arg(parser=pipeline_parser)
     add_n_clusters_arg(parser=pipeline_parser)
     add_do_debug_arg(parser=pipeline_parser)
+    add_cluster_method_arg(parser=pipeline_parser)
     pipeline_parser.add_argument(
         '--n-iterations', type=int, required=True,
         help='The number of iterations to reduce the features and re-cluster'
     )
+    pipeline_parser.add_argument(
+        '--do-continue', required=False, action='store_true',
+        help='Whether to continue the pipeline from its latest iteration or not'
+    )
+
+    # Configure the best-clustering handler
+    best_clustering_parser: ArgumentParser = subparsers.add_parser('best-clustering')
+    add_cohort_arg(parser=best_clustering_parser)
+    add_dataset_arg(parser=best_clustering_parser)
 
     # Configure the genotypes handler
     genotypes_parser: ArgumentParser = subparsers.add_parser('genotypes')
@@ -159,29 +180,32 @@ def main(argv: list):
     elif args.handler_type == 'cluster':
         # Obtain the cluster labels for the ARFF
         cluster_handler(
-            cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
-            n_clusters=args.n_clusters
+            cohort=args.cohort, dataset=args.dataset, cluster_method=args.cluster_method, n_clusters=args.n_clusters,
+            iteration=args.iteration, n_kept_feats=args.n_kept_feats
         )
     elif args.handler_type == 'arff':
         # Make the ARFF to be used with WEKA
         arff_handler(
-            cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
-            n_clusters=args.n_clusters, clustering_score=args.clustering_score
+            cohort=args.cohort, dataset=args.dataset, cluster_method=args.cluster_method, n_clusters=args.n_clusters,
+            iteration=args.iteration, n_kept_feats=args.n_kept_feats, clustering_score=args.clustering_score
         )
     elif args.handler_type == 'feat-select':
         # Select the features from the ARFF using WEKA
         feat_select_handler(
-            cohort=args.cohort, iteration=args.iteration, dataset=args.dataset, n_kept_feats=args.n_kept_feats,
-            n_clusters=args.n_clusters
+            cohort=args.cohort, dataset=args.dataset, cluster_method=args.cluster_method, n_clusters=args.n_clusters,
+            iteration=args.iteration, n_kept_feats=args.n_kept_feats
         )
     elif args.handler_type == 'pipeline':
         pipeline_handler(
-            cohort=args.cohort, dataset=args.dataset, n_clusters=args.n_clusters, n_iterations=args.n_iterations
+            cohort=args.cohort, dataset=args.dataset, cluster_method=args.cluster_method, n_clusters=args.n_clusters,
+            n_iterations=args.n_iterations, do_continue=args.do_continue
         )
     elif args.handler_type == 'genotypes':
         genotypes_handler(
             cohort=args.cohort, dataset=args.dataset, clustering_path=args.clustering_path
         )
+    elif args.handler_type == 'best-clustering':
+        best_clustering_handler(cohort=args.cohort, dataset=args.dataset)
 
 
 if __name__ == '__main__':

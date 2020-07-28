@@ -10,15 +10,18 @@ from handler.utils import (
 )
 
 
-def cluster_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int, n_clusters: int):
+def cluster_handler(
+    cohort: str, dataset: str, cluster_method: str, n_clusters: int, iteration: int, n_kept_feats: int
+):
     """Main function of this module"""
 
     data, ptid_col, n_kept_feats = get_data_set(
-        cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
+        cohort=cohort, dataset=dataset, cluster_method=cluster_method, n_clusters=n_clusters, iteration=iteration,
+        n_kept_feats=n_kept_feats
     )
 
     model = SpectralClustering(
-        n_clusters=n_clusters, affinity='rbf', assign_labels='kmeans', random_state=0
+        n_clusters=n_clusters, affinity=cluster_method, assign_labels='kmeans', random_state=0
     )
     labels: ndarray = model.fit_predict(data)
     clustering_score: float = silhouette_score(data, labels)
@@ -30,16 +33,19 @@ def cluster_handler(cohort: str, iteration: int, dataset: str, n_kept_feats: int
 
     # Save the clustering
     clustering_path: str = CLUSTERING_PATH.format(
-        cohort, dataset, iteration, n_kept_feats, n_clusters, clustering_score
+        cohort, dataset, cluster_method, n_clusters, iteration, n_kept_feats, clustering_score
     )
     clustering.to_csv(clustering_path, index=False)
 
 
-def get_data_set(cohort: str, dataset: str, iteration: int, n_kept_feats: int, n_clusters: int) -> tuple:
+def get_data_set(
+    cohort: str, dataset: str, cluster_method: str, n_clusters: int, iteration: int, n_kept_feats: int
+) -> tuple:
     """Creates the final data set from the selected features and one-hot encoded nominal columns"""
 
     data, col_types, n_kept_feats = get_data(
-        cohort=cohort, dataset=dataset, iteration=iteration, n_kept_feats=n_kept_feats, n_clusters=n_clusters
+        cohort=cohort, dataset=dataset, cluster_method=cluster_method, n_clusters=n_clusters, iteration=iteration,
+        n_kept_feats=n_kept_feats
     )
 
     # Temporarily take out the patient id column
