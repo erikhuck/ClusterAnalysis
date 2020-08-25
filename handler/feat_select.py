@@ -11,13 +11,20 @@ def feat_select_handler(
 ):
     """Main method of this module"""
 
-    n_kept_feats_decay: float = 0.9
-
     # We need to get the previous data now because n_kept_feats will change after selecting features
     data, col_types, n_kept_feats = get_data(
         cohort=cohort, dataset=dataset, cluster_method=cluster_method, n_clusters=n_clusters, iteration=iteration,
         n_kept_feats=n_kept_feats
     )
+
+    if n_kept_feats <= 100:
+        # If the number of remaining features is less than or equal to 100, just take off one feature at a time
+        n_kept_feats_decay: float = (n_kept_feats - 1) / n_kept_feats
+    elif n_kept_feats < 500:
+        # Decrease the number of features by a lower amount
+        n_kept_feats_decay: float = 0.95
+    else:
+        n_kept_feats_decay: float = 0.9
 
     # Run the feature selection WEKA algorithm on the ARFF
     arff_path: str = ARFF_PATH.format(cohort, dataset, cluster_method, n_clusters, iteration, n_kept_feats)
