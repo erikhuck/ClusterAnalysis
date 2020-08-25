@@ -104,6 +104,10 @@ def parse_args(argv) -> Namespace:
     combine_parser: ArgumentParser = subparsers.add_parser('combine')
     add_cohort_arg(parser=combine_parser)
     add_dataset_arg(parser=combine_parser)
+    combine_parser.add_argument(
+        '--mri-path', type=str, required=True, nargs='?', default=None,
+        help='path the feature-selected MRI data to combine with the rest of the data. If not set, takes full data set.'
+    )
     add_do_debug_arg(parser=combine_parser)
 
     # Configure the cluster handler
@@ -165,7 +169,7 @@ def main(argv: list):
         debug_datasets_handler(cohort=args.cohort, dataset=args.dataset)
     elif args.handler_type == 'combine':
         # Combine the phenotypes, MRI data, and gene expression data into a single data set
-        combine_handler(cohort=args.cohort, dataset=args.dataset, do_debug=args.do_debug)
+        combine_handler(cohort=args.cohort, dataset=args.dataset, mri_path=args.mri_path, do_debug=args.do_debug)
     elif args.handler_type == 'cluster':
         # Obtain the cluster labels for the ARFF
         cluster_handler(
