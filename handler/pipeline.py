@@ -45,15 +45,20 @@ def pipeline_handler(
         )
         popen(command).read()
 
-        # Select the best portion of the features according to the cluster labels and a WEKA algorithm
-        # The amount of remaining features will be smaller than the previous iteration
-        command: str = get_command(
-            handler='feat-select', cohort=cohort, dataset=dataset, cluster_method=cluster_method, n_clusters=n_clusters,
-            iteration=iteration, n_kept_feats=n_kept_feats
-        )
-        n_kept_feats: str = popen(command).read()
-        n_kept_feats: int = int(n_kept_feats)
-        print('Number Of Features Remaining:', n_kept_feats)
+        # If we're on the very last feature, don't do this step
+        if n_kept_feats is None or n_kept_feats > 1:
+            # Select the best portion of the features according to the cluster labels and a WEKA algorithm
+            # The amount of remaining features will be smaller than the previous iteration
+            command: str = get_command(
+                handler='feat-select', cohort=cohort, dataset=dataset, cluster_method=cluster_method,
+                n_clusters=n_clusters, iteration=iteration, n_kept_feats=n_kept_feats
+            )
+            n_kept_feats: str = popen(command).read()
+            n_kept_feats: int = int(n_kept_feats)
+            print('Number Of Features Remaining:', n_kept_feats)
+        else:
+            # End the pipeline because there's only one feature left
+            break
 
 
 def get_command(

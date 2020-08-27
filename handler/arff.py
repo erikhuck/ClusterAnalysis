@@ -31,6 +31,9 @@ def arff_handler(
     # Since the clustering labels are for selecting features, we do not want to include the patient IDs in the ARFF
     del data[PTID_COL]
 
+    # Scale the numbers to avoid the "duplicate bin range" error when the info gain is computed
+    data: DataFrame = data * 1000
+
     # Convert the data to ARFF format and save it as an ARFF file
     arff_path: str = ARFF_PATH.format(cohort, dataset, cluster_method, n_clusters, iteration, n_kept_feats)
     save_data(arff_path=arff_path, arff_data=data, col_types=col_types, target_col=CLUSTER_ID_COL, cohort=cohort)
