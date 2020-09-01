@@ -10,6 +10,7 @@ from handler.arff import arff_handler
 from handler.feat_select import feat_select_handler
 from handler.pipeline import pipeline_handler
 from handler.best_clustering import best_clustering_handler
+from handler.counts import counts_handler
 from handler.utils import DEBUG_IDENTIFIER
 
 
@@ -150,6 +151,17 @@ def parse_args(argv) -> Namespace:
     add_cohort_arg(parser=best_clustering_parser)
     add_dataset_arg(parser=best_clustering_parser)
 
+    # Configure the counts handler
+    counts_parser: ArgumentParser = subparsers.add_parser('counts')
+    counts_parser.add_argument(
+        '--clustering-path', type=str, required=True,
+        help='path to the clustering to get variant counts for.'
+    )
+    counts_parser.add_argument(
+        '--feat-map-path', type=str, required=True,
+        help='path to the mapping from PTID to the variant to count.'
+    )
+
     args: Namespace = parser.parse_args(argv)
 
     if hasattr(args, 'do_debug') and args.do_debug is True:
@@ -195,6 +207,8 @@ def main(argv: list):
         )
     elif args.handler_type == 'best-clustering':
         best_clustering_handler(cohort=args.cohort, dataset=args.dataset)
+    elif args.handler_type == 'counts':
+        counts_handler(clustering_path=args.clustering_path, feat_map_path=args.feat_map_path)
 
 
 if __name__ == '__main__':
