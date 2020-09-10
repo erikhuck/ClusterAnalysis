@@ -4,3 +4,4 @@
 *.out
 clean-data/
 prepared-data/
+clustering-plot.png
